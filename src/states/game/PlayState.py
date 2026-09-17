@@ -38,7 +38,8 @@ class PlayState(BaseState):
         self.active_dialog = FloatingDialog(
             text="¡Bienvenido a tu primer día de trabajo!\nAsegúrate de poner los paquetes en la zona amarilla.\n¡El camión vendrá por ellos a las 4:00 PM!",
             font=self.game.fonts["medium"],
-            portrait_frames=portrait_frames
+            portrait_frames=portrait_frames,
+            sound=settings.load_dialog_sound("boss")
         )
 
     @property

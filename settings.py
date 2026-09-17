@@ -149,6 +149,38 @@ def load_boss_frames() -> list[pygame.Surface]:
     ]
 
 
+def create_8bit_blip(frequency: int = 450, duration_ms: int = 35, sample_rate: int = 44100) -> pygame.mixer.Sound:
+    """Sintetiza una onda cuadrada retro usando NumPy (estilo Undertale)."""
+    import numpy as np
+    duration_sec = duration_ms / 1000.0
+    t = np.linspace(0, duration_sec, int(sample_rate * duration_sec), endpoint=False)
+    
+    # Onda cuadrada
+    wave = np.sign(np.sin(frequency * t * 2 * np.pi))
+    
+    # Fade-out lineal rápido para evitar chasquidos de audio (popping) al final
+    envelope = np.linspace(1.0, 0.0, len(wave))
+    wave = wave * envelope
+    
+    # Escalar a entero de 16 bits y bajar el volumen al 20%
+    audio = np.int16(wave * 32767 * 0.2)
+    
+    # Duplicar para canales estéreo
+    stereo_audio = np.column_stack((audio, audio))
+    return pygame.sndarray.make_sound(stereo_audio)
+
+
+@lru_cache(maxsize=3)
+def load_dialog_sound(character: str = "default") -> pygame.mixer.Sound:
+    """Genera y almacena en caché el pitido de diálogo según el personaje."""
+    if character == "boss":
+        # Un sonido más grave para el jefe
+        return create_8bit_blip(200, 45)
+    else:
+        # Sonido estándar para texto sin personaje (o "normal text")
+        return create_8bit_blip(450, 35)
+
+
 def create_fonts() -> dict[str, pygame.font.Font]:
     """Se llama después de que Gale inicializa Pygame."""
     return {

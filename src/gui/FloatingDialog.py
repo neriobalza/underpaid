@@ -44,8 +44,10 @@ class FloatingDialog:
             # Verificar si se reveló un nuevo carácter para reproducir sonido
             current_index = int(self.char_index)
             if current_index > self.last_played_index and current_index <= len(self.full_text):
-                # Omitir sonido en espacios para dar efecto más natural
-                if self.sound and self.full_text[self.last_played_index] != " ":
+                char = self.full_text[self.last_played_index]
+                # Omitir sonido en espacios o signos de puntuación para dar efecto natural
+                if self.sound and char.strip() and char not in ".,!?":
+                    self.sound.stop()
                     self.sound.play()
                 self.last_played_index = current_index
 
@@ -89,19 +91,19 @@ class FloatingDialog:
         # Dibujar el texto revelado hasta el momento
         displayed_text = self.full_text[:int(self.char_index)]
         
-        # Pequeño sistema manual para dividir el texto en varias líneas
-        words = displayed_text.split(" ")
+        # Sistema para dividir el texto en líneas (respetando \n manuales y ancho máximo)
         lines = []
-        current_line = ""
-        
-        for word in words:
-            test_line = current_line + (" " if current_line else "") + word
-            if self.font.size(test_line)[0] > text_width_limit:
-                lines.append(current_line)
-                current_line = word
-            else:
-                current_line = test_line
-        lines.append(current_line)
+        for paragraph in displayed_text.split("\n"):
+            words = paragraph.split(" ")
+            current_line = ""
+            for word in words:
+                test_line = current_line + (" " if current_line else "") + word
+                if self.font.size(test_line)[0] > text_width_limit:
+                    lines.append(current_line)
+                    current_line = word
+                else:
+                    current_line = test_line
+            lines.append(current_line)
 
         # Dibujar las líneas
         y_offset = inner_rect.top
