@@ -4,6 +4,7 @@ import pygame
 from gale.command import CommandBindings
 from gale.animation import Animation
 from gale.input_handler import apply_deadzone
+from gale.tilemap import move_and_collide
 
 import settings
 from src.input.commands import MOVEMENT_COMMANDS
@@ -52,7 +53,7 @@ class Player:
 
     @property
     def hitbox(self) -> pygame.Rect:
-        """Área de apoyo en el suelo; la cabeza puede sobresalir sobre paredes."""
+        """Mitad inferior del cuerpo: collider de pies contra paredes, cajas y jugadores."""
         return pygame.Rect(
             round(self.position.x - settings.PLAYER_COLLISION_WIDTH / 2),
             round(self.position.y + settings.PLAYER_FRAME_HEIGHT / 2 - settings.PLAYER_COLLISION_HEIGHT),
@@ -116,47 +117,60 @@ class Player:
         progress = self.lift_elapsed / settings.POT_LIFT_DURATION
         obj.position.update(self.lift_start.lerp(target, progress))
 
-    def _move(self, movement, room, obstacles) -> None:
+    def _move(self, movement, room, obstacles, players) -> None:
         half_width = settings.PLAYER_COLLISION_WIDTH / 2
         half_height = settings.PLAYER_FRAME_HEIGHT / 2
         top_offset = half_height - settings.PLAYER_COLLISION_HEIGHT
-        
-        solid_rects = [obj.hitbox for obj in obstacles if obj.solid]
-
-        hitbox = self.hitbox
-        tm_x = hitbox.left - room.bounds.left
-        tm_y = hitbox.top - room.bounds.top
-        
-        from gale.tilemap import move_and_collide
-        new_x, new_y, col_x, col_y = move_and_collide(
-            room.tilemap, "walls",
-            tm_x, tm_y, hitbox.width, hitbox.height,
-            movement.x, movement.y,
-            collision_property="collision"
+        solid_bounds = []
+        for obj in obstacles:
+            if obj.solid:
+                rect = obj.hitbox
+                solid_bounds.append((rect.left, rect.top, rect.right, rect.bottom))
+        # Los compañeros se mueven en coordenadas decimales: redondear su
+        # collider podría permitir pequeñas penetraciones en cada frame.
+        solid_bounds.extend(
+            (player.position.x - half_width, player.position.y + top_offset,
+             player.position.x + half_width, player.position.y + half_height)
+            for player in players if player is not self
         )
-        
-        target_x = new_x + room.bounds.left + half_width
-        target_y = new_y + room.bounds.top - top_offset
-        
+
+        # Resolver paredes y cuerpos en X antes de calcular Y conserva el
+        # deslizamiento junto a obstáculos. Gale recibe posiciones sin redondear.
         old_x = self.position.x
-        self.position.x = target_x
-        for rect in solid_rects:
-            if self.position.y + half_height <= rect.top or self.position.y + top_offset >= rect.bottom:
+        if movement.x:
+            new_x, _, _, _ = move_and_collide(
+                room.tilemap, "walls",
+                old_x - half_width - room.bounds.left,
+                self.position.y + top_offset - room.bounds.top,
+                settings.PLAYER_COLLISION_WIDTH, settings.PLAYER_COLLISION_HEIGHT,
+                movement.x, 0, collision_property="collision",
+            )
+            self.position.x = new_x + room.bounds.left + half_width
+        for left, top, right, bottom in solid_bounds:
+            if self.position.y + half_height <= top or self.position.y + top_offset >= bottom:
                 continue
-            if target_x > old_x and old_x + half_width <= rect.left:
-                self.position.x = min(self.position.x, rect.left - half_width)
-            elif target_x < old_x and old_x - half_width >= rect.right:
-                self.position.x = max(self.position.x, rect.right + half_width)
+            if movement.x > 0 and old_x + half_width <= left:
+                self.position.x = min(self.position.x, left - half_width)
+            elif movement.x < 0 and old_x - half_width >= right:
+                self.position.x = max(self.position.x, right + half_width)
 
         old_y = self.position.y
-        self.position.y = target_y
-        for rect in solid_rects:
-            if self.position.x + half_width <= rect.left or self.position.x - half_width >= rect.right:
+        if movement.y:
+            _, new_y, _, _ = move_and_collide(
+                room.tilemap, "walls",
+                self.position.x - half_width - room.bounds.left,
+                old_y + top_offset - room.bounds.top,
+                settings.PLAYER_COLLISION_WIDTH, settings.PLAYER_COLLISION_HEIGHT,
+                0, movement.y, collision_property="collision",
+            )
+            self.position.y = new_y + room.bounds.top - top_offset
+        for left, top, right, bottom in solid_bounds:
+            if self.position.x + half_width <= left or self.position.x - half_width >= right:
                 continue
-            if target_y > old_y and old_y + half_height <= rect.top:
-                self.position.y = min(self.position.y, rect.top - half_height)
-            elif target_y < old_y and old_y + top_offset >= rect.bottom:
-                self.position.y = max(self.position.y, rect.bottom - top_offset)
+            if movement.y > 0 and old_y + half_height <= top:
+                self.position.y = min(self.position.y, top - half_height)
+            elif movement.y < 0 and old_y + top_offset >= bottom:
+                self.position.y = max(self.position.y, bottom - top_offset)
 
     def on_input(self, input_id, input_data) -> None:
         if self.number is None:
@@ -191,7 +205,7 @@ class Player:
         else:
             self.direction.y = value
 
-    def update(self, dt: float, room, obstacles=()) -> None:
+    def update(self, dt: float, room, obstacles=(), players=()) -> None:
         if self.carrying is not None and self.lift_elapsed < settings.POT_LIFT_DURATION:
             self._update_carried_object(dt)
             return
@@ -203,7 +217,7 @@ class Player:
         speed = settings.PLAYER_SPEED
         if self.carrying is not None:
             speed *= settings.BOX_SPEED_MULTIPLIERS[self.carrying.box_type]
-        self._move(direction * speed * dt, room, obstacles)
+        self._move(direction * speed * dt, room, obstacles, players)
         self._update_carried_object(dt)
         if direction.length_squared() == 0:
             self.animation.reset()

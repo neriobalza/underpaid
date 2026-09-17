@@ -1,6 +1,7 @@
 """Pruebas de propiedad y selección con eventos SDL y dispositivos simulados."""
 
 import os
+import json
 import unittest
 from unittest.mock import patch
 
@@ -201,23 +202,18 @@ class ControllerTests(unittest.TestCase):
         self.assertLess(p1.position.x, 640)
         self.assertLess(p1.position.y, 480)
 
-    def test_room_uses_princess_floor_walls_and_corners(self):
+    def test_room_uses_tiled_floor_and_wall_layers(self):
         room = self.play().room
-        grid = room.tilemap.get_layer('floor')
-        self.assertEqual(grid[0][0], settings.TILE_TOP_LEFT_CORNER)
-        self.assertEqual(grid[0][-1], settings.TILE_TOP_RIGHT_CORNER)
-        self.assertEqual(grid[-1][0], settings.TILE_BOTTOM_LEFT_CORNER)
-        self.assertEqual(grid[-1][-1], settings.TILE_BOTTOM_RIGHT_CORNER)
-        for tile in grid[0][1:-1]:
-            self.assertIn(tile, settings.TILE_TOP_WALLS)
-        for tile in grid[-1][1:-1]:
-            self.assertIn(tile, settings.TILE_BOTTOM_WALLS)
-        for row in grid[1:-1]:
-            self.assertIn(row[0], settings.TILE_LEFT_WALLS)
-            self.assertIn(row[-1], settings.TILE_RIGHT_WALLS)
-            for tile in row[1:-1]:
-                self.assertIn(tile, settings.TILE_FLOORS)
-                self.assertIsNotNone(room.tilemap.tileset_for_gid(tile))
+        with open(settings.BASE_DIR / 'assets' / 'tilemaps' / 'day1.json') as file:
+            map_data = json.load(file)
+        group = next(layer for layer in map_data['layers'] if layer['type'] == 'group')
+        for layer in group['layers']:
+            grid = room.tilemap.get_layer(layer['name'])
+            self.assertEqual([tile for row in grid for tile in row], layer['data'])
+            for row in grid:
+                for tile in row:
+                    if tile:
+                        self.assertIsNotNone(room.tilemap.tileset_for_gid(tile))
         self.assertEqual(room.bounds, pygame.Rect(0, 32, 640, 448))
 
     def test_both_players_remain_inside_room_walls(self):
@@ -236,11 +232,18 @@ class ControllerTests(unittest.TestCase):
     def test_players_reach_edge_floor_tiles_and_overlap_upper_wall(self):
         state = self.play()
         bounds = state.room.walkable_area
+        # El mapa de Tiled tiene dos filas de pared en la parte superior.
+        bounds = bounds.copy()
+        bounds.top += settings.TILE_RENDER_SIZE
+        bounds.height -= settings.TILE_RENDER_SIZE
         top_wall = pygame.Rect(state.room.bounds.left, state.room.bounds.top,
-                               state.room.bounds.width, settings.TILE_RENDER_SIZE)
+                               state.room.bounds.width, 2 * settings.TILE_RENDER_SIZE)
         for player in state.players.values():
+            other = next(other for other in state.players.values() if other is not player)
+            other.position.update(80, 128)
             for dx, dy, edge in ((-1, 0, 'left'), (1, 0, 'right'),
                                  (0, 1, 'bottom'), (0, -1, 'top')):
+                player.position.update(272, 240)
                 self.axis(player.controller_id, dx)
                 self.axis(player.controller_id, dy, pygame.CONTROLLER_AXIS_LEFTY)
                 self.game.update(100)
@@ -258,6 +261,9 @@ class ControllerTests(unittest.TestCase):
         state = self.keyboard_play()
         player = state.players[1]
         bounds = state.room.walkable_area
+        bounds = bounds.copy()
+        bounds.top += settings.TILE_RENDER_SIZE
+        bounds.height -= settings.TILE_RENDER_SIZE
         self.key(pygame.K_w)
         self.game.update(100)
         self.assertEqual(player.hitbox.top, bounds.top)
@@ -398,7 +404,7 @@ class ControllerTests(unittest.TestCase):
         surface = pygame.Surface((640, 480))
         surface.fill(settings.BACKGROUND_COLOR)
         p1.direction.update(0, 1)
-        p1.update(0.01)
+        p1.update(0.01, state.room)
         p1.stop()
         p1.position.update(160, 240)
         p1.render(surface)
@@ -530,8 +536,10 @@ class ControllerTests(unittest.TestCase):
             with self.subTest(direction=(dx, dy)):
                 for key in keyboard_keys:
                     self.key(key, pressed=False)
-                for player in state.players.values():
-                    player.position.update(320, 240)
+                starts = {}
+                for number, player in state.players.items():
+                    player.position.update(240 if number == 1 else 400, 240)
+                    starts[number] = player.position.copy()
                 self.axis(71, dx)
                 self.axis(71, dy, pygame.CONTROLLER_AXIS_LEFTY)
                 if dx:
@@ -539,8 +547,8 @@ class ControllerTests(unittest.TestCase):
                 if dy:
                     self.key(pygame.K_s if dy > 0 else pygame.K_w)
                 self.game.update(dt)
-                for player in state.players.values():
-                    distance = (player.position - pygame.Vector2(320, 240)).length()
+                for number, player in state.players.items():
+                    distance = (player.position - starts[number]).length()
                     self.assertAlmostEqual(distance, settings.PLAYER_SPEED * dt, delta=0.001)
 
     def test_carry_speed_by_box_type_for_keyboard_and_controller_and_restores_on_drop(self):
@@ -549,9 +557,11 @@ class ControllerTests(unittest.TestCase):
         for box_type, speed in (('large', 90), ('medium', 120), ('small', 180)):
             for dx, dy in ((1, 0), (0, -1), (1, 1)):
                 with self.subTest(box_type=box_type, direction=(dx, dy)):
-                    for player in state.players.values():
+                    starts = {}
+                    for number, player in state.players.items():
                         player.stop()
-                        player.position.update(320, 240)
+                        player.position.update(240 if number == 1 else 400, 240)
+                        starts[number] = player.position.copy()
                         player.lift(Box(64, 96, box_type))
                     self.axis(71, dx)
                     self.axis(71, dy, pygame.CONTROLLER_AXIS_LEFTY)
@@ -560,14 +570,14 @@ class ControllerTests(unittest.TestCase):
                     if dy:
                         self.key(pygame.K_s if dy > 0 else pygame.K_w)
                     self.game.update(settings.POT_LIFT_DURATION)
-                    for player in state.players.values():
-                        self.assertEqual(player.position, pygame.Vector2(320, 240))
+                    for number, player in state.players.items():
+                        self.assertEqual(player.position, starts[number])
                     self.game.update(0.1)
-                    for player in state.players.values():
-                        self.assertAlmostEqual(player.position.distance_to((320, 240)), speed * 0.1, delta=0.001)
+                    for number, player in state.players.items():
+                        self.assertAlmostEqual(player.position.distance_to(starts[number]), speed * 0.1, delta=0.001)
                         position = player.position.copy()
                         player.put_down((64, 96))
-                        player.update(0.1, state.room.walkable_area)
+                        player.update(0.1, state.room, players=state.players.values())
                         self.assertAlmostEqual(player.position.distance_to(position), 18, delta=0.001)
 
     def test_carry_slowdown_is_independent_and_preserves_analog_input(self):
@@ -583,6 +593,151 @@ class ControllerTests(unittest.TestCase):
         self.game.update(0.1)
         self.assertAlmostEqual(keyboard.position.distance_to(starts[1]), 9)
         self.assertAlmostEqual(gamepad.position.distance_to(starts[2]), 6, delta=0.001)
+
+    def test_players_block_each_other_from_all_directions_with_keyboard_and_controller(self):
+        state = self.keyboard_play()
+        state.room.objects = []
+        cases = (
+            ((240, 224), (1, 0), 'right', 'left'),
+            ((400, 224), (-1, 0), 'left', 'right'),
+            ((320, 144), (0, 1), 'bottom', 'top'),
+            ((320, 320), (0, -1), 'top', 'bottom'),
+        )
+        for player in state.players.values():
+            other = next(other for other in state.players.values() if other is not player)
+            for position, direction, edge, other_edge in cases:
+                with self.subTest(input_source=player.input_source, direction=direction):
+                    player.stop()
+                    other.stop()
+                    player.position.update(position)
+                    other.position.update(320, 224)
+                    if player.uses_keyboard:
+                        key = {(1, 0): pygame.K_d, (-1, 0): pygame.K_a,
+                               (0, 1): pygame.K_s, (0, -1): pygame.K_w}[direction]
+                        self.key(key)
+                    else:
+                        self.axis(player.controller_id, direction[0])
+                        self.axis(player.controller_id, direction[1], pygame.CONTROLLER_AXIS_LEFTY)
+                    # Comprobar todo el recorrido, aunque un frame sea muy largo.
+                    self.game.update(2)
+                    self.assertEqual(getattr(player.hitbox, edge), getattr(other.hitbox, other_edge))
+                    self.assertFalse(player.hitbox.colliderect(other.hitbox))
+                    self.assertEqual(other.position, pygame.Vector2(320, 224))
+
+    def test_players_moving_toward_each_other_cannot_swap_or_overlap(self):
+        state = self.play()
+        state.room.objects = []
+        first, second = state.players.values()
+        for dt, frames in ((2, 1), (1 / 60, 90)):
+            with self.subTest(dt=dt):
+                first.position.update(240, 224)
+                second.position.update(400, 224)
+                self.axis(first.controller_id, 1)
+                self.axis(second.controller_id, -1)
+                for _ in range(frames):
+                    self.game.update(dt)
+                    self.assertLessEqual(first.hitbox.right, second.hitbox.left)
+                    self.assertFalse(first.hitbox.colliderect(second.hitbox))
+                self.assertEqual(first.hitbox.right, second.hitbox.left)
+
+    def test_fractional_player_positions_do_not_allow_small_penetrations(self):
+        state = self.play()
+        state.room.objects = []
+        first, second = state.players.values()
+        for axis in (pygame.CONTROLLER_AXIS_LEFTX, pygame.CONTROLLER_AXIS_LEFTY):
+            with self.subTest(axis=axis):
+                first.stop()
+                second.stop()
+                if axis == pygame.CONTROLLER_AXIS_LEFTX:
+                    first.position.update(288.4, 224.3)
+                    second.position.update(320.7, 224.3)
+                else:
+                    first.position.update(320.3, 192.4)
+                    second.position.update(320.3, 224.7)
+                self.axis(first.controller_id, 0.5, axis)
+                self.axis(second.controller_id, -0.5, axis)
+                for _ in range(120):
+                    self.game.update(0.002)
+                    self.assertFalse(first.hitbox.colliderect(second.hitbox))
+                    if axis == pygame.CONTROLLER_AXIS_LEFTX:
+                        self.assertLessEqual(first.position.x + 32, second.position.x + 1e-9)
+                    else:
+                        self.assertLessEqual(first.position.y + 32, second.position.y + 1e-9)
+
+    def test_player_slides_along_companion_and_can_move_away(self):
+        state = self.keyboard_play()
+        state.room.objects = []
+        first, second = state.players.values()
+        first.position.update(288, 224)
+        second.position.update(320, 224)
+        self.key(pygame.K_d)
+        self.key(pygame.K_s)
+        self.game.update(0.1)
+        self.assertEqual(first.position.x, 288)
+        self.assertGreater(first.position.y, 224)
+        self.assertFalse(first.hitbox.colliderect(second.hitbox))
+        self.key(pygame.K_d, pressed=False)
+        self.key(pygame.K_s, pressed=False)
+        self.key(pygame.K_a)
+        self.game.update(0.1)
+        self.assertLess(first.position.x, 288)
+        self.assertFalse(first.hitbox.colliderect(second.hitbox))
+
+    def test_player_collision_uses_only_lower_half_of_sprite(self):
+        state = self.play()
+        state.room.objects = []
+        first, second = state.players.values()
+        first.position.update(320, 192)
+        second.position.update(320, 240)
+        for player in (first, second):
+            sprite = player.animation.get_current_frame().get_rect(center=player.position)
+            self.assertEqual(player.hitbox, pygame.Rect(sprite.left, sprite.centery, 32, 32))
+        first_sprite = first.animation.get_current_frame().get_rect(center=first.position)
+        second_sprite = second.animation.get_current_frame().get_rect(center=second.position)
+        self.assertTrue(first_sprite.colliderect(second_sprite))
+        self.assertFalse(first.hitbox.colliderect(second.hitbox))
+        self.axis(first.controller_id, 1)
+        self.game.update(0.1)
+        self.assertAlmostEqual(first.position.x - 320, 18, delta=0.001)
+
+    def test_lifting_or_carrying_player_still_blocks_companion(self):
+        state = self.play()
+        state.room.objects = []
+        first, second = state.players.values()
+        first.position.update(240, 224)
+        second.position.update(320, 224)
+        second.lift(Box(64, 96, 'large'))
+        self.axis(first.controller_id, 1)
+        self.game.update(0.3)
+        self.assertEqual(first.hitbox.right, second.hitbox.left)
+        self.assertFalse(first.hitbox.colliderect(second.hitbox))
+        first.lift(Box(64, 96, 'medium'))
+        self.game.update(settings.POT_LIFT_DURATION)
+        self.game.update(1)
+        self.assertEqual(first.hitbox.right, second.hitbox.left)
+        self.assertFalse(first.hitbox.colliderect(second.hitbox))
+
+    def test_players_do_not_push_each_other_through_wall_or_box(self):
+        state = self.play()
+        first, second = state.players.values()
+        for blocker in ('wall', 'box'):
+            with self.subTest(blocker=blocker):
+                state.room.objects = []
+                if blocker == 'wall':
+                    second.position.update(592, 224)
+                else:
+                    state.room.objects = [Box(352, 224)]
+                    second.position.update(336, 224)
+                first.position.update(second.position.x - 32, 224)
+                self.axis(first.controller_id, 1)
+                self.axis(second.controller_id, 1)
+                self.game.update(1)
+                self.assertEqual(first.hitbox.right, second.hitbox.left)
+                self.assertFalse(first.hitbox.colliderect(second.hitbox))
+                if blocker == 'wall':
+                    self.assertEqual(second.hitbox.right, state.room.walkable_area.right)
+                else:
+                    self.assertEqual(second.hitbox.right, state.room.objects[0].hitbox.left)
 
     def test_boxes_block_every_direction_without_tunneling(self):
         state = self.play()
@@ -616,6 +771,81 @@ class ControllerTests(unittest.TestCase):
             self.assertEqual(pygame.image.tobytes(box.image, 'RGBA'), pygame.image.tobytes(expected, 'RGBA'))
         with self.assertRaises(ValueError):
             Box(100, 100, 'unknown')
+
+    def test_top_wall_blocks_box_placement_and_preview_for_keyboard_and_controller(self):
+        state = self.keyboard_play()
+        for player in state.players.values():
+            for box_type in ('large', 'medium', 'small'):
+                with self.subTest(input_source=player.input_source, box_type=box_type):
+                    for participant in state.players.values():
+                        participant.stop()
+                        participant.position.update(464, 224)
+                    box = Box(64, 160, box_type)
+                    state.room.objects = [box]
+                    player.position.update(272, state.room.bounds.top + 64)
+                    player.facing = 'up'
+                    player.lift(box)
+                    self.game.update(settings.POT_LIFT_DURATION)
+                    target = state.room.placement_target(player)
+                    if box_type != 'large':
+                        # Estas posiciones pasaban el límite rectangular anterior.
+                        self.assertTrue(state.room.walkable_area.contains(target))
+                    self.assertFalse(state.room.can_place(player, target, state.players.values()))
+                    surface = pygame.Surface((640, 480), pygame.SRCALPHA)
+                    state.room.render_placement(surface, state.players.values())
+                    self.assertEqual(surface.get_at(target.topleft)[:3], settings.PLACEMENT_INVALID_COLOR)
+                    if player.uses_keyboard:
+                        self.key_tap(pygame.K_RETURN)
+                    else:
+                        self.button(player.controller_id, pressed=False)
+                        self.button(player.controller_id)
+                    self.game.update(0)
+                    self.assertIs(player.carrying, box)
+                    self.assertEqual(box.floor_position, pygame.Vector2(64, 160))
+                    player.clear_carrying()
+
+    def test_boxes_can_be_placed_on_floor_touching_top_wall(self):
+        state = self.play()
+        player = state.players[1]
+        floor_top = state.room.bounds.top + 64
+        for box_type in ('large', 'medium', 'small'):
+            with self.subTest(box_type=box_type):
+                box = Box(64, 160, box_type)
+                state.room.objects = [box]
+                player.position.update(272, floor_top + box.height)
+                player.facing = 'up'
+                player.lift(box)
+                player.lift_elapsed = settings.POT_LIFT_DURATION
+                target = state.room.placement_target(player)
+                self.assertEqual(target.top, floor_top)
+                self.assertTrue(state.room.try_put_down(player, state.players.values()))
+                self.assertEqual(box.hitbox, target)
+
+    def test_placement_checks_every_wall_tile_covered_by_large_or_small_box(self):
+        state = self.play()
+        player = state.players[1]
+        # Usar un tile sólido del mapa para simular una pared interior.
+        wall_gid = state.room.tilemap.get_gid('walls', 2, 0)
+        walls = state.room.tilemap.get_layer('walls')
+        for box_type, target, wall_cell in (
+            ('large', pygame.Rect(256, 224, 64, 64), (7, 9)),
+            ('small', pygame.Rect(272, 240, 16, 16), (6, 8)),
+        ):
+            with self.subTest(box_type=box_type):
+                box = Box(64, 160, box_type)
+                state.room.objects = [box]
+                player.lift(box)
+                player.lift_elapsed = settings.POT_LIFT_DURATION
+                player.position.update(80, 160)
+                self.assertTrue(state.room.can_place(player, target, state.players.values()))
+                row, col = wall_cell
+                original = walls[row][col]
+                walls[row][col] = wall_gid
+                try:
+                    self.assertFalse(state.room.can_place(player, target, state.players.values()))
+                finally:
+                    walls[row][col] = original
+                    player.clear_carrying()
 
     def test_large_box_cannot_overlap_wall_or_obstacle_in_second_tile(self):
         state = self.play()

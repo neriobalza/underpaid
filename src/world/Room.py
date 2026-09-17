@@ -5,7 +5,7 @@ import random
 
 import pygame
 import json
-from gale.tilemap import load_tiled_map
+from gale.tilemap import CollisionType, collision_type_at, load_tiled_map
 
 import settings
 from src.world.Box import Box
@@ -136,6 +136,17 @@ class Room:
             return False
         if not self.walkable_area.contains(target):
             return False
+        # La pared superior de Tiled ocupa más de una fila. Comprobar
+        # todos los tiles cubiertos por la caja, incluidas las subcasillas.
+        tile_width, tile_height = self.tilemap.tile_width, self.tilemap.tile_height
+        first_col = (target.left - self.bounds.left) // tile_width
+        last_col = (target.right - self.bounds.left - 1) // tile_width
+        first_row = (target.top - self.bounds.top) // tile_height
+        last_row = (target.bottom - self.bounds.top - 1) // tile_height
+        for row in range(first_row, last_row + 1):
+            for col in range(first_col, last_col + 1):
+                if collision_type_at(self.tilemap, "walls", row, col) == CollisionType.SOLID:
+                    return False
         if any(other.solid and target.colliderect(other.hitbox) for other in self.objects):
             return False
         if any(target.colliderect(other.hitbox) for other in players):

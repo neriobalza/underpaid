@@ -17,6 +17,8 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Added
 
+- Colisiones entre personajes usando el collider de 32 × 32 de la mitad
+  inferior del cuerpo, con deslizamiento por eje y bloqueo durante la carga de cajas.
 - Zonas visuales dedicadas en el suelo del almacén: área gris para recepción de paquetes y área amarilla para despachos.
 - Nuevo mapa estructural del almacén con soporte para paredes físicas.
 - Tres tipos de cajas: grandes de recepción (64 × 64), medianas para pedidos
@@ -48,6 +50,12 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Fixed
 
+- La colocación comprueba todos los tiles de pared que ocupa una caja,
+  bloqueando la segunda fila de la pared superior y cualquier solapamiento
+  parcial. La vista previa muestra esas posiciones en rojo.
+- El movimiento conserva las coordenadas decimales al consultar las paredes de Gale,
+  evitando desplazamientos por redondeo al detenerse. El eje vertical se calcula
+  después de resolver el horizontal contra cajas y personajes.
 - Las cajas pequeñas se colocan en una cuadrícula de 16 × 16, permitiendo
   cuatro por tile de 32 × 32. La vista previa y la colisión respetan cada
   subcasilla y rechazan las posiciones ocupadas.

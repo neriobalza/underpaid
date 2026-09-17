@@ -121,6 +121,10 @@ Ambos jugadores aparecen dentro de la sala y las paredes delimitan su movimiento
 La colisión utiliza la mitad inferior del personaje, donde apoya los pies, para
 alcanzar todos los tiles de suelo junto a las paredes. La cabeza y el torso pueden
 superponerse a la pared superior, dando perspectiva sin atravesar los límites del suelo.
+Los personajes tampoco pueden atravesarse: cada uno bloquea al otro con un collider
+de 32 × 32 píxeles en la mitad inferior del cuerpo. Cabeza y torso pueden
+superponerse visualmente cuando los pies están separados. Las colisiones se
+resuelven por eje para poder deslizarse junto al compañero, incluso cargando cajas.
 
 ## Duración de la partida
 
@@ -209,6 +213,9 @@ puedes colocarla y roja si está bloqueada o todavía estás levantándola.
 Si hay una pared, otra caja o un jugador en ese lugar, conservas
 la caja sobre la cabeza hasta encontrar espacio. Al colocarla vuelve a bloquear
 el paso y cualquiera de los dos jugadores puede levantarla de nuevo.
+La colocación consulta la capa de paredes del mapa de Tiled para toda el área
+de la caja; también bloquea la segunda fila de la pared superior y los
+solapamientos parciales de cajas grandes o subcasillas pequeñas.
 
 ## Verificación
 
