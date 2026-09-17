@@ -9,6 +9,8 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Added
 
+- Zonas visuales dedicadas en el suelo del almacén: área gris para recepción de paquetes y área amarilla para despachos.
+- Nuevo mapa estructural del almacén con soporte para paredes físicas.
 - Tres tipos de cajas: grandes de recepción (64 × 64), medianas para pedidos
   (32 × 32) y pequeñas para pedidos (16 × 16), con sprites locales para cada tipo.
 - Dos cajas grandes, una mediana y una pequeña al iniciar cada jornada.
@@ -21,6 +23,7 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Changed
 
+- La delimitación del área de juego ahora usa obstáculos físicos (paredes) en lugar de una barrera invisible en los bordes de la pantalla.
 - Cargar una caja grande reduce la velocidad a la mitad y una mediana a dos
   tercios; las pequeñas conservan la velocidad normal. Colocarla restaura la
   velocidad, tanto con teclado como con mando y en movimiento diagonal.
