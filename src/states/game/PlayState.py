@@ -42,10 +42,10 @@ class PlayState(BaseState):
         if self.state_machine.current is self:
             delivered = self.room.count_deliveries()
             self.game.delivered += delivered
-            if delivered < len(self.room.objects):
+            if delivered < self.room.order_count:
                 self.game.stars = max(0, self.game.stars - 1)
             self.state_machine.change("game_over", players=self.players, delivered=delivered,
-                                      total=len(self.room.objects))
+                                      total=self.room.order_count)
 
     def update(self, dt: float) -> None:
         connected = {

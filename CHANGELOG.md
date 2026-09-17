@@ -9,6 +9,9 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Added
 
+- Tres tipos de cajas: grandes de recepción (64 × 64), medianas para pedidos
+  (32 × 32) y pequeñas para pedidos (16 × 16), con el sprite local `big_box.png`.
+- Dos cajas grandes, una mediana y una pequeña al iniciar cada jornada.
 - Resumen de jornada como quinta escena de Gale, con continuación mientras queden estrellas.
 - Zona de despacho para los objetos actuales, puntuación acumulada sin límite de jornadas
   y derrota al perder las cinco estrellas. Cada jornada incompleta resta una estrella.
@@ -18,6 +21,8 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Changed
 
+- Las cajas sustituyen las vasijas; colisión y vista previa de colocación usan
+  el tamaño de cada tipo. Sólo las cajas medianas y pequeñas cuentan en despacho.
 - Movimiento del teclado mediante `gale.command.CommandBindings` y comandos reutilizables,
   siguiendo el patrón del proyecto de referencia `06-princess`.
 - La interacción con objetos se procesa en el personaje y la escena resuelve sus efectos.
