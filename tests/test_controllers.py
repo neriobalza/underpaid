@@ -543,6 +543,47 @@ class ControllerTests(unittest.TestCase):
                     distance = (player.position - pygame.Vector2(320, 240)).length()
                     self.assertAlmostEqual(distance, settings.PLAYER_SPEED * dt, delta=0.001)
 
+    def test_carry_speed_by_box_type_for_keyboard_and_controller_and_restores_on_drop(self):
+        state = self.keyboard_play()
+        state.room.objects = []
+        for box_type, speed in (('large', 90), ('medium', 120), ('small', 180)):
+            for dx, dy in ((1, 0), (0, -1), (1, 1)):
+                with self.subTest(box_type=box_type, direction=(dx, dy)):
+                    for player in state.players.values():
+                        player.stop()
+                        player.position.update(320, 240)
+                        player.lift(Box(64, 96, box_type))
+                    self.axis(71, dx)
+                    self.axis(71, dy, pygame.CONTROLLER_AXIS_LEFTY)
+                    if dx:
+                        self.key(pygame.K_d)
+                    if dy:
+                        self.key(pygame.K_s if dy > 0 else pygame.K_w)
+                    self.game.update(settings.POT_LIFT_DURATION)
+                    for player in state.players.values():
+                        self.assertEqual(player.position, pygame.Vector2(320, 240))
+                    self.game.update(0.1)
+                    for player in state.players.values():
+                        self.assertAlmostEqual(player.position.distance_to((320, 240)), speed * 0.1, delta=0.001)
+                        position = player.position.copy()
+                        player.put_down((64, 96))
+                        player.update(0.1, state.room.walkable_area)
+                        self.assertAlmostEqual(player.position.distance_to(position), 18, delta=0.001)
+
+    def test_carry_slowdown_is_independent_and_preserves_analog_input(self):
+        state = self.keyboard_play()
+        state.room.objects = []
+        keyboard, gamepad = state.players[1], state.players[2]
+        keyboard.lift(Box(64, 96, 'large'))
+        gamepad.lift(Box(64, 96, 'medium'))
+        self.key(pygame.K_d)
+        self.axis(71, 0.5)
+        self.game.update(settings.POT_LIFT_DURATION)
+        starts = {number: player.position.copy() for number, player in state.players.items()}
+        self.game.update(0.1)
+        self.assertAlmostEqual(keyboard.position.distance_to(starts[1]), 9)
+        self.assertAlmostEqual(gamepad.position.distance_to(starts[2]), 6, delta=0.001)
+
     def test_boxes_block_every_direction_without_tunneling(self):
         state = self.play()
         obj = Box(304, 224)
@@ -565,9 +606,10 @@ class ControllerTests(unittest.TestCase):
 
     def test_box_types_use_asset_and_fit_inside_room(self):
         state = self.play()
-        sprite = pygame.image.load(settings.BASE_DIR / 'assets' / 'graphics' / 'big_box.png').convert_alpha()
+        filenames = {'large': 'big_box.png', 'medium': 'medium_box.png', 'small': 'small_box.png'}
         self.assertEqual([box.box_type for box in state.room.objects], ['large', 'large', 'medium', 'small'])
         for box in state.room.objects:
+            sprite = pygame.image.load(settings.BASE_DIR / 'assets' / 'graphics' / filenames[box.box_type]).convert_alpha()
             self.assertTrue(state.room.walkable_area.contains(box.hitbox))
             self.assertEqual(box.image.get_size(), box.hitbox.size)
             expected = pygame.transform.scale(sprite, settings.BOX_SIZES[box.box_type])

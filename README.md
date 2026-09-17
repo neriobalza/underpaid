@@ -174,13 +174,13 @@ locales `projects/01-pong` a `projects/08-throw_a_bird`, especialmente `06-princ
 ## Objetos levantables
 
 La sala comienza con dos cajas grandes, una mediana y una pequeña (`src/world/Box.py`).
-Todas usan `assets/graphics/big_box.png`, escalado sin suavizado para conservar el pixel art.
+Cada tipo usa su propio sprite de `assets/graphics/`, escalado sin suavizado para conservar el pixel art.
 
-| Tipo (`box_type`) | Tamaño | Uso |
-|-------------------|--------|-----|
-| `large` | 64 × 64 píxeles | Recepción de productos |
-| `medium` | 32 × 32 píxeles | Pedidos medianos |
-| `small` | 16 × 16 píxeles | Pedidos pequeños |
+| Tipo (`box_type`) | Tamaño | Sprite | Uso |
+|-------------------|--------|--------|-----|
+| `large` | 64 × 64 píxeles | `big_box.png` | Recepción de productos |
+| `medium` | 32 × 32 píxeles | `medium_box.png` | Pedidos medianos |
+| `small` | 16 × 16 píxeles | `small_box.png` | Pedidos pequeños |
 
 `Box(x, y, box_type="medium")` permite crear cada tipo; los tipos desconocidos se rechazan.
 La colisión ocupa el tamaño de la caja y se calcula contra la mitad inferior de los personajes. Los jugadores
@@ -191,6 +191,11 @@ para levantarla. Durante los 0,3 segundos del levantamiento el personaje permane
 quieto; después puede caminar llevando el objeto sobre la cabeza. La caja levantada
 deja de bloquear el suelo y sólo puede pertenecer a un jugador. Cada personaje puede
 cargar un objeto a la vez.
+Mientras carga, la velocidad es de **90 píxeles/s con una caja grande**,
+**120 píxeles/s con una mediana** y **180 píxeles/s con una pequeña**
+(la velocidad normal). Colocar la caja restaura la velocidad normal.
+Estos límites se aplican también a las diagonales; el joystick conserva
+el movimiento proporcional a su inclinación.
 Al cargar, el personaje utiliza `assets/graphics/player_pot_walk.png` para caminar
 con los brazos levantados. Cada jugador mantiene su propia animación de carga.
 
