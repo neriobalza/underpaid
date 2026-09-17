@@ -1,0 +1,153 @@
+"""Configuración de pantalla, controles y colores de Underpaid."""
+
+import pygame
+from functools import lru_cache
+from pathlib import Path
+
+from gale.input_handler import InputHandler
+from gale.tilemap import Tileset
+
+
+TITLE = "Underpaid"
+FPS = 60
+
+# La lógica y los menús siempre se dibujan en estas coordenadas.
+VIRTUAL_WIDTH = 640
+VIRTUAL_HEIGHT = 480
+
+# Todas las resoluciones de ventana tienen proporción 4:3.
+WINDOW_RESOLUTIONS = (
+    (640, 480),
+    (960, 720),
+    (1280, 960),
+    (1920, 1440),
+)
+
+# Cambia este índice (0–3) para elegir la resolución al iniciar.
+DEFAULT_RESOLUTION_INDEX = 0
+WINDOW_WIDTH, WINDOW_HEIGHT = WINDOW_RESOLUTIONS[DEFAULT_RESOLUTION_INDEX]
+
+# True para iniciar en pantalla completa; False para iniciar en ventana.
+FULLSCREEN = False
+
+BACKGROUND_COLOR = (23, 27, 38)
+PANEL_COLOR = (35, 41, 56)
+TEXT_COLOR = (235, 238, 245)
+MUTED_COLOR = (164, 174, 194)
+ACCENT_COLOR = (246, 190, 76)
+
+PLAYER_COLORS = {1: (82, 169, 255), 2: (255, 116, 128)}
+PLAYER_SPEED = 180
+PLAYER_FRAME_WIDTH = 32
+PLAYER_FRAME_HEIGHT = 64
+# Sólo la mitad inferior del personaje ocupa espacio en el suelo.
+PLAYER_COLLISION_WIDTH = PLAYER_FRAME_WIDTH
+PLAYER_COLLISION_HEIGHT = PLAYER_FRAME_HEIGHT // 2
+PLAYER_FRAME_INTERVAL = 0.12
+STICK_DEADZONE = 0.2
+SELECTION_THRESHOLD = 0.6
+KEYBOARD_INPUT = "keyboard"
+
+BASE_DIR = Path(__file__).resolve().parent
+
+# La sala reutiliza los tiles e IDs de 06-princess, a escala 2:1.
+TILE_SIZE = 16
+TILE_SCALE = 2
+TILE_RENDER_SIZE = TILE_SIZE * TILE_SCALE
+CLOCK_START_HOUR = 8
+CLOCK_END_HOUR = 16
+SECONDS_PER_GAME_HOUR = 60
+MATCH_DURATION = (CLOCK_END_HOUR - CLOCK_START_HOUR) * SECONDS_PER_GAME_HOUR
+CLOCK_BAR_HEIGHT = TILE_RENDER_SIZE
+CLOCK_BAR_COLOR = (255, 255, 255)
+PLACEMENT_VALID_COLOR = (40, 220, 80)
+PLACEMENT_INVALID_COLOR = (240, 50, 50)
+MAP_WIDTH = VIRTUAL_WIDTH // TILE_RENDER_SIZE
+MAP_HEIGHT = (VIRTUAL_HEIGHT - CLOCK_BAR_HEIGHT) // TILE_RENDER_SIZE
+MAP_RENDER_OFFSET_X = (VIRTUAL_WIDTH - MAP_WIDTH * TILE_RENDER_SIZE) // 2
+MAP_RENDER_OFFSET_Y = CLOCK_BAR_HEIGHT
+
+TILE_TOP_LEFT_CORNER = 4
+TILE_TOP_RIGHT_CORNER = 5
+TILE_BOTTOM_LEFT_CORNER = 23
+TILE_BOTTOM_RIGHT_CORNER = 24
+TILE_FLOORS = (
+    7, 8, 9, 10, 11, 12, 13,
+    26, 27, 28, 29, 30, 31, 32,
+    45, 46, 47, 48, 49, 50, 51,
+    64, 65, 66, 67, 68, 69, 70,
+    88, 89, 107, 108,
+)
+TILE_TOP_WALLS = (58, 59, 60)
+TILE_BOTTOM_WALLS = (79, 80, 81)
+TILE_LEFT_WALLS = (77, 96, 115)
+TILE_RIGHT_WALLS = (78, 97, 116)
+POT_TILE = 16
+POT_LIFT_DURATION = 0.3
+
+
+@lru_cache(maxsize=1)
+def load_room_tileset() -> Tileset:
+    sheet = pygame.image.load(BASE_DIR / "assets" / "graphics" / "tilesheet.png").convert_alpha()
+    sheet = pygame.transform.scale(sheet, (sheet.get_width() * TILE_SCALE, sheet.get_height() * TILE_SCALE))
+    return Tileset(sheet, TILE_RENDER_SIZE, TILE_RENDER_SIZE)
+
+
+@lru_cache(maxsize=2)
+def load_player_frames(filename: str = "player_walk.png") -> dict[str, tuple[pygame.Surface, ...]]:
+    """Carga una vez el spritesheet; cada jugador conserva su propio reloj."""
+    sheet = pygame.image.load(BASE_DIR / "assets" / "graphics" / filename).convert_alpha()
+    return {
+        direction: tuple(
+            sheet.subsurface(pygame.Rect(
+                column * PLAYER_FRAME_WIDTH, row * PLAYER_FRAME_HEIGHT,
+                PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT,
+            )).copy()
+            for column in range(4)
+        )
+        for row, direction in enumerate(("down", "right", "up", "left"))
+    }
+
+
+def create_fonts() -> dict[str, pygame.font.Font]:
+    """Se llama después de que Gale inicializa Pygame."""
+    return {
+        "small": pygame.font.Font(None, 22),
+        "medium": pygame.font.Font(None, 30),
+        "large": pygame.font.Font(None, 64),
+    }
+
+
+for key, action in (
+    (pygame.K_UP, "up"),
+    (pygame.K_w, "keyboard_up"),
+    (pygame.K_DOWN, "down"),
+    (pygame.K_s, "keyboard_down"),
+    (pygame.K_LEFT, "left"),
+    (pygame.K_a, "keyboard_left"),
+    (pygame.K_RIGHT, "right"),
+    (pygame.K_d, "keyboard_right"),
+    (pygame.K_RETURN, "confirm"),
+    (pygame.K_SPACE, "confirm"),
+    (pygame.K_ESCAPE, "back"),
+    (pygame.K_DELETE, "cancel"),
+    (pygame.K_BACKSPACE, "cancel"),
+):
+    InputHandler.set_keyboard_action(key, action)
+
+InputHandler.set_mouse_click_action(pygame.BUTTON_LEFT, "click")
+InputHandler.set_mouse_motion_action(None, "mouse_move")
+
+# Botones y ejes estandarizados por el mapeo de SDL para mandos Xbox.
+for button, action in (
+    (pygame.CONTROLLER_BUTTON_A, "pad_a"),
+    (pygame.CONTROLLER_BUTTON_B, "pad_b"),
+    (pygame.CONTROLLER_BUTTON_DPAD_UP, "pad_up"),
+    (pygame.CONTROLLER_BUTTON_DPAD_DOWN, "pad_down"),
+    (pygame.CONTROLLER_BUTTON_DPAD_LEFT, "pad_left"),
+    (pygame.CONTROLLER_BUTTON_DPAD_RIGHT, "pad_right"),
+):
+    InputHandler.set_gamepad_button_action(button, action)
+
+InputHandler.set_gamepad_axis_action(pygame.CONTROLLER_AXIS_LEFTX, "pad_x")
+InputHandler.set_gamepad_axis_action(pygame.CONTROLLER_AXIS_LEFTY, "pad_y")
