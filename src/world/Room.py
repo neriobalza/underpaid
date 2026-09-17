@@ -4,7 +4,8 @@ import math
 import random
 
 import pygame
-from gale.tilemap import TileMap
+import json
+from gale.tilemap import load_tiled_map
 
 import settings
 from src.world.Box import Box
@@ -13,8 +14,10 @@ from src.world.Box import Box
 class Room:
     def __init__(self) -> None:
         size = settings.TILE_RENDER_SIZE
-        self.tilemap = TileMap(size, size, settings.MAP_WIDTH, settings.MAP_HEIGHT)
-        self.tilemap.add_tileset(settings.load_room_tileset())
+        
+        map_path = settings.BASE_DIR / "assets" / "tilemaps" / "day1.json"
+        self.tilemap = load_tiled_map(str(map_path))
+        
         self.bounds = pygame.Rect(
             settings.MAP_RENDER_OFFSET_X, settings.MAP_RENDER_OFFSET_Y,
             self.tilemap.pixel_width, self.tilemap.pixel_height,
@@ -24,44 +27,19 @@ class Room:
             self.walkable_area.right - size, self.bounds.top + 5 * size,
             size, 4 * size,
         )
-        self._generate_tiles()
-        self.objects = [
-            Box(self.bounds.x + col * size, self.bounds.y + row * size)
-            for col in (3, self.tilemap.cols - 4)
-            for row in (3, self.tilemap.rows - 4)
-        ]
+        
+        self.objects = []
+        with open(map_path) as f:
+            map_data = json.load(f)
+            for layer in map_data.get("layers", []):
+                if layer.get("type") == "objectgroup" and layer.get("name") == "boxes":
+                    for obj in layer.get("objects", []):
+                        self.objects.append(Box(self.bounds.x + obj.get("x", 0), self.bounds.y + obj.get("y", 0)))
 
         # La sala es estática: se dibuja una vez y se reutiliza cada frame.
         self.background = pygame.Surface(self.bounds.size)
         self.background.fill(settings.BACKGROUND_COLOR)
         self.tilemap.render(self.background)
-
-    def _generate_tiles(self) -> None:
-        tiles = self.tilemap.add_layer("floor")
-        cols, rows = self.tilemap.cols, self.tilemap.rows
-        corners = {
-            (0, 0): settings.TILE_TOP_LEFT_CORNER,
-            (0, cols - 1): settings.TILE_TOP_RIGHT_CORNER,
-            (rows - 1, 0): settings.TILE_BOTTOM_LEFT_CORNER,
-            (rows - 1, cols - 1): settings.TILE_BOTTOM_RIGHT_CORNER,
-        }
-        # Misma sala en cada partida, con las variaciones de suelo de Princess.
-        rng = random.Random(9)
-        for row in range(rows):
-            for col in range(cols):
-                if (row, col) in corners:
-                    tile = corners[row, col]
-                elif col == 0:
-                    tile = rng.choice(settings.TILE_LEFT_WALLS)
-                elif col == cols - 1:
-                    tile = rng.choice(settings.TILE_RIGHT_WALLS)
-                elif row == 0:
-                    tile = rng.choice(settings.TILE_TOP_WALLS)
-                elif row == rows - 1:
-                    tile = rng.choice(settings.TILE_BOTTOM_WALLS)
-                else:
-                    tile = rng.choice(settings.TILE_FLOORS)
-                tiles[row][col] = tile
 
     def spawn_position(self, number: int) -> tuple[float, float]:
         fraction = 0.25 if number == 1 else 0.75

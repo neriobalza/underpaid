@@ -116,39 +116,46 @@ class Player:
         progress = self.lift_elapsed / settings.POT_LIFT_DURATION
         obj.position.update(self.lift_start.lerp(target, progress))
 
-    def _move(self, movement, bounds, obstacles) -> None:
-        half_width = settings.PLAYER_FRAME_WIDTH / 2
+    def _move(self, movement, room, obstacles) -> None:
+        half_width = settings.PLAYER_COLLISION_WIDTH / 2
         half_height = settings.PLAYER_FRAME_HEIGHT / 2
-        if bounds is None:
-            bounds = pygame.Rect(0, 0, settings.VIRTUAL_WIDTH, settings.VIRTUAL_HEIGHT)
-            top_offset = -half_height
-        else:
-            half_width = settings.PLAYER_COLLISION_WIDTH / 2
-            top_offset = half_height - settings.PLAYER_COLLISION_HEIGHT
+        top_offset = half_height - settings.PLAYER_COLLISION_HEIGHT
+        
         solid_rects = [obj.hitbox for obj in obstacles if obj.solid]
 
-        # Resolver cada eje por separado permite deslizarse junto a las cajas.
-        # Se comprueba todo el recorrido para no atravesarlas con un dt grande.
+        hitbox = self.hitbox
+        tm_x = hitbox.left - room.bounds.left
+        tm_y = hitbox.top - room.bounds.top
+        
+        from gale.tilemap import move_and_collide
+        new_x, new_y, col_x, col_y = move_and_collide(
+            room.tilemap, "walls",
+            tm_x, tm_y, hitbox.width, hitbox.height,
+            movement.x, movement.y,
+            collision_property="collision"
+        )
+        
+        target_x = new_x + room.bounds.left + half_width
+        target_y = new_y + room.bounds.top - top_offset
+        
         old_x = self.position.x
-        self.position.x = max(bounds.left + half_width,
-                              min(bounds.right - half_width, old_x + movement.x))
+        self.position.x = target_x
         for rect in solid_rects:
             if self.position.y + half_height <= rect.top or self.position.y + top_offset >= rect.bottom:
                 continue
-            if movement.x > 0 and old_x + half_width <= rect.left:
+            if target_x > old_x and old_x + half_width <= rect.left:
                 self.position.x = min(self.position.x, rect.left - half_width)
-            elif movement.x < 0 and old_x - half_width >= rect.right:
+            elif target_x < old_x and old_x - half_width >= rect.right:
                 self.position.x = max(self.position.x, rect.right + half_width)
 
         old_y = self.position.y
-        self.position.y = max(bounds.top - top_offset,
-                              min(bounds.bottom - half_height, old_y + movement.y))
+        self.position.y = target_y
         for rect in solid_rects:
             if self.position.x + half_width <= rect.left or self.position.x - half_width >= rect.right:
                 continue
-            if movement.y > 0 and old_y + half_height <= rect.top:
+            if target_y > old_y and old_y + half_height <= rect.top:
                 self.position.y = min(self.position.y, rect.top - half_height)
-            elif movement.y < 0 and old_y + top_offset >= rect.bottom:
+            elif target_y < old_y and old_y + top_offset >= rect.bottom:
                 self.position.y = max(self.position.y, rect.bottom - top_offset)
 
     def on_input(self, input_id, input_data) -> None:
@@ -184,7 +191,7 @@ class Player:
         else:
             self.direction.y = value
 
-    def update(self, dt: float, bounds: pygame.Rect | None = None, obstacles=()) -> None:
+    def update(self, dt: float, room, obstacles=()) -> None:
         if self.carrying is not None and self.lift_elapsed < settings.POT_LIFT_DURATION:
             self._update_carried_object(dt)
             return
@@ -193,7 +200,7 @@ class Player:
         # diagonales, conservando el movimiento lento del joystick analógico.
         if direction.length_squared() > 1:
             direction.normalize_ip()
-        self._move(direction * settings.PLAYER_SPEED * dt, bounds, obstacles)
+        self._move(direction * settings.PLAYER_SPEED * dt, room, obstacles)
         self._update_carried_object(dt)
         if direction.length_squared() == 0:
             self.animation.reset()

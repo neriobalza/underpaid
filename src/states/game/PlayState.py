@@ -56,7 +56,7 @@ class PlayState(BaseState):
             self.state_machine.change("player_select", players=connected)
             return
         for player in self.players.values():
-            player.update(dt, self.room.walkable_area, self.room.objects)
+            player.update(dt, self.room, self.room.objects)
             if player.interact_requested:
                 player.interact_requested = False
                 self.room.interact(player, self.players.values())
