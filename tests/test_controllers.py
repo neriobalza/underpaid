@@ -658,6 +658,68 @@ class ControllerTests(unittest.TestCase):
                 self.assertTrue(state.room.try_put_down(player, state.players.values()))
                 self.assertEqual(box.hitbox, target)
 
+    def test_four_small_boxes_fit_in_one_tile_using_keyboard_or_controller(self):
+        state = self.keyboard_play()
+        tile = pygame.Rect(320, 256, 32, 32)
+        placements = (
+            ((304, 248), 'right', (320, 256)),
+            ((304, 264), 'right', (320, 272)),
+            ((368, 248), 'left', (336, 256)),
+            ((368, 264), 'left', (336, 272)),
+        )
+        for player in state.players.values():
+            with self.subTest(input_source=player.input_source):
+                state.room.objects = []
+                for participant in state.players.values():
+                    participant.stop()
+                    participant.position.update(80, 80)
+                for position, facing, destination in placements:
+                    box = Box(64, 96, 'small')
+                    state.room.objects.append(box)
+                    player.position.update(position)
+                    player.facing = facing
+                    player.lift(box)
+                    self.game.update(settings.POT_LIFT_DURATION)
+                    target = pygame.Rect(*destination, 16, 16)
+                    self.assertEqual(state.room.placement_target(player), target)
+                    surface = pygame.Surface((640, 480), pygame.SRCALPHA)
+                    state.room.render_placement(surface, state.players.values())
+                    self.assertEqual(surface.get_bounding_rect(), target)
+                    self.assertEqual(surface.get_at(destination)[:3], settings.PLACEMENT_VALID_COLOR)
+                    if player.uses_keyboard:
+                        self.key_tap(pygame.K_RETURN)
+                    else:
+                        self.button(player.controller_id, pressed=False)
+                        self.button(player.controller_id)
+                    self.game.update(0)
+                    self.assertIsNone(player.carrying)
+                    self.assertEqual(box.hitbox, target)
+                self.assertEqual(sum(box.width * box.height for box in state.room.objects), tile.width * tile.height)
+                for index, box in enumerate(state.room.objects):
+                    self.assertTrue(tile.contains(box.hitbox))
+                    self.assertFalse(any(box.hitbox.colliderect(other.hitbox)
+                                         for other in state.room.objects[index + 1:]))
+
+    def test_occupied_small_cell_blocks_small_medium_and_large_boxes(self):
+        state = self.play()
+        player = state.players[1]
+        state.room.objects = [Box(336, 256, 'small')]
+        for box_type in ('small', 'medium', 'large'):
+            with self.subTest(box_type=box_type):
+                box = Box(64, 96, box_type)
+                player.position.update(336, 224)
+                player.facing = 'down'
+                player.lift(box)
+                player.lift_elapsed = settings.POT_LIFT_DURATION
+                target = state.room.placement_target(player)
+                self.assertTrue(target.colliderect(state.room.objects[0].hitbox))
+                surface = pygame.Surface((640, 480), pygame.SRCALPHA)
+                state.room.render_placement(surface, state.players.values())
+                self.assertEqual(surface.get_at(target.topleft)[:3], settings.PLACEMENT_INVALID_COLOR)
+                self.assertFalse(state.room.try_put_down(player, state.players.values()))
+                self.assertIs(player.carrying, box)
+                player.clear_carrying()
+
     def test_large_reception_box_does_not_count_as_delivered_order(self):
         state = self.play()
         box = state.room.objects[0]

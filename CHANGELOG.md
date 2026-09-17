@@ -40,6 +40,9 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Fixed
 
+- Las cajas pequeñas se colocan en una cuadrícula de 16 × 16, permitiendo
+  cuatro por tile de 32 × 32. La vista previa y la colisión respetan cada
+  subcasilla y rechazan las posiciones ocupadas.
 - Cerrar la ventana o elegir Salir cancela el reloj, libera los objetos cargados,
   cierra los dispositivos y desregistra el juego de `InputHandler`.
 - La limpieza tolera dispositivos desconectados o ya cerrados y puede repetirse.
