@@ -7,6 +7,7 @@ from gale.timer import Timer
 import settings
 from src.gui.Menu import draw_text
 from src.world.Room import Room
+from src.gui.FloatingDialog import FloatingDialog
 
 
 class PlayState(BaseState):
@@ -31,6 +32,14 @@ class PlayState(BaseState):
             [(self, {"game_minutes": float(settings.CLOCK_END_HOUR * 60)})],
             on_finish=self._finish_match,
         )
+        
+        portrait_frames = settings.load_boss_frames()
+        
+        self.active_dialog = FloatingDialog(
+            text="¡Bienvenido a tu primer día de trabajo!\nAsegúrate de poner los paquetes en la zona amarilla.\n¡El camión vendrá por ellos a las 4:00 PM!",
+            font=self.game.fonts["medium"],
+            portrait_frames=portrait_frames
+        )
 
     @property
     def clock_text(self) -> str:
@@ -48,6 +57,12 @@ class PlayState(BaseState):
                                       total=self.room.order_count)
 
     def update(self, dt: float) -> None:
+        if getattr(self, "active_dialog", None):
+            self.active_dialog.update(dt)
+            if self.active_dialog.is_finished:
+                self.active_dialog = None
+            return
+
         connected = {
             number: player for number, player in self.players.items()
             if player.is_connected(self.game.controllers)
@@ -69,6 +84,10 @@ class PlayState(BaseState):
             player.clear_carrying()
 
     def on_input(self, input_id, input_data) -> None:
+        if getattr(self, "active_dialog", None):
+            self.active_dialog.on_input(input_id, input_data)
+            return
+
         if input_id == "back" and input_data.pressed:
             self.state_machine.change("main_menu")
             return
@@ -93,3 +112,6 @@ class PlayState(BaseState):
         surface.blit(label, (20, 7))
         label = self.game.fonts["small"].render("Despacho: borde amarillo", True, settings.BACKGROUND_COLOR)
         surface.blit(label, (settings.VIRTUAL_WIDTH - label.get_width() - 8, 7))
+
+        if getattr(self, "active_dialog", None):
+            self.active_dialog.render(surface)
