@@ -200,7 +200,10 @@ Al cargar, el personaje utiliza `assets/graphics/player_pot_walk.png` para camin
 con los brazos levantados. Cada jugador mantiene su propia animación de carga.
 
 Mientras cargas una caja, pulsa **A o Enter de nuevo** para colocarla en el suelo
-delante del personaje, alineada a la cuadrícula de tiles de 32 × 32 píxeles.
+delante del personaje. Las cajas medianas y grandes se alinean a la cuadrícula
+de tiles de 32 × 32 píxeles. Las pequeñas se alinean a una cuadrícula de
+16 × 16: caben cuatro en un tile, distribuidas en dos filas y dos columnas.
+Muévete frente a la subcasilla que quieres ocupar antes de colocarla.
 Sólo se muestra el área que ocupa la caja en la dirección que miras mientras cargas: verde si
 puedes colocarla y roja si está bloqueada o todavía estás levantándola.
 Si hay una pared, otra caja o un jugador en ese lugar, conservas

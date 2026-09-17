@@ -116,6 +116,8 @@ class Room:
         width, height = (size, size) if player.carrying is None else (
             player.carrying.width, player.carrying.height,
         )
+        # Las cajas pequeñas usan las cuatro subcasillas de cada tile.
+        size = min(size, width, height)
         col = (feet.centerx - self.bounds.left) // size
         row = (feet.centery - self.bounds.top) // size
         if player.facing == "left":
