@@ -543,6 +543,47 @@ class ControllerTests(unittest.TestCase):
                     distance = (player.position - pygame.Vector2(320, 240)).length()
                     self.assertAlmostEqual(distance, settings.PLAYER_SPEED * dt, delta=0.001)
 
+    def test_carry_speed_by_box_type_for_keyboard_and_controller_and_restores_on_drop(self):
+        state = self.keyboard_play()
+        state.room.objects = []
+        for box_type, speed in (('large', 90), ('medium', 120), ('small', 180)):
+            for dx, dy in ((1, 0), (0, -1), (1, 1)):
+                with self.subTest(box_type=box_type, direction=(dx, dy)):
+                    for player in state.players.values():
+                        player.stop()
+                        player.position.update(320, 240)
+                        player.lift(Box(64, 96, box_type))
+                    self.axis(71, dx)
+                    self.axis(71, dy, pygame.CONTROLLER_AXIS_LEFTY)
+                    if dx:
+                        self.key(pygame.K_d)
+                    if dy:
+                        self.key(pygame.K_s if dy > 0 else pygame.K_w)
+                    self.game.update(settings.POT_LIFT_DURATION)
+                    for player in state.players.values():
+                        self.assertEqual(player.position, pygame.Vector2(320, 240))
+                    self.game.update(0.1)
+                    for player in state.players.values():
+                        self.assertAlmostEqual(player.position.distance_to((320, 240)), speed * 0.1, delta=0.001)
+                        position = player.position.copy()
+                        player.put_down((64, 96))
+                        player.update(0.1, state.room.walkable_area)
+                        self.assertAlmostEqual(player.position.distance_to(position), 18, delta=0.001)
+
+    def test_carry_slowdown_is_independent_and_preserves_analog_input(self):
+        state = self.keyboard_play()
+        state.room.objects = []
+        keyboard, gamepad = state.players[1], state.players[2]
+        keyboard.lift(Box(64, 96, 'large'))
+        gamepad.lift(Box(64, 96, 'medium'))
+        self.key(pygame.K_d)
+        self.axis(71, 0.5)
+        self.game.update(settings.POT_LIFT_DURATION)
+        starts = {number: player.position.copy() for number, player in state.players.items()}
+        self.game.update(0.1)
+        self.assertAlmostEqual(keyboard.position.distance_to(starts[1]), 9)
+        self.assertAlmostEqual(gamepad.position.distance_to(starts[2]), 6, delta=0.001)
+
     def test_boxes_block_every_direction_without_tunneling(self):
         state = self.play()
         obj = Box(304, 224)
@@ -562,6 +603,69 @@ class ControllerTests(unittest.TestCase):
                 self.game.update(10)
                 self.assertEqual(getattr(player.hitbox, player_edge), getattr(obj.hitbox, object_edge))
                 self.assertFalse(player.hitbox.colliderect(obj.hitbox))
+
+    def test_box_types_use_asset_and_fit_inside_room(self):
+        state = self.play()
+        filenames = {'large': 'big_box.png', 'medium': 'medium_box.png', 'small': 'small_box.png'}
+        self.assertEqual([box.box_type for box in state.room.objects], ['large', 'large', 'medium', 'small'])
+        for box in state.room.objects:
+            sprite = pygame.image.load(settings.BASE_DIR / 'assets' / 'graphics' / filenames[box.box_type]).convert_alpha()
+            self.assertTrue(state.room.walkable_area.contains(box.hitbox))
+            self.assertEqual(box.image.get_size(), box.hitbox.size)
+            expected = pygame.transform.scale(sprite, settings.BOX_SIZES[box.box_type])
+            self.assertEqual(pygame.image.tobytes(box.image, 'RGBA'), pygame.image.tobytes(expected, 'RGBA'))
+        with self.assertRaises(ValueError):
+            Box(100, 100, 'unknown')
+
+    def test_large_box_cannot_overlap_wall_or_obstacle_in_second_tile(self):
+        state = self.play()
+        player = state.players[1]
+        box = Box(96, 128, 'large')
+        state.room.objects = [box]
+        player.lift(box)
+        player.lift_elapsed = settings.POT_LIFT_DURATION
+        player.position.update(327, 241)
+        player.facing = 'right'
+        target = state.room.placement_target(player)
+        self.assertEqual(target, pygame.Rect(352, 256, 64, 64))
+        self.assertTrue(state.room.can_place(player, target, state.players.values()))
+        state.room.objects.append(Box(target.left + 32, target.top + 32, 'small'))
+        self.assertFalse(state.room.try_put_down(player, state.players.values()))
+        self.assertIs(player.carrying, box)
+        state.room.objects.pop()
+        player.position.x = state.room.walkable_area.right - 48
+        target = state.room.placement_target(player)
+        self.assertGreater(target.right, state.room.walkable_area.right)
+        self.assertFalse(state.room.try_put_down(player, state.players.values()))
+
+    def test_small_box_placement_matches_preview_in_all_directions(self):
+        state = self.play()
+        player = state.players[1]
+        for facing in ('left', 'right', 'up', 'down'):
+            with self.subTest(facing=facing):
+                box = Box(96, 128, 'small')
+                state.room.objects = [box]
+                player.position.update(327, 241)
+                player.facing = facing
+                player.lift(box)
+                player.lift_elapsed = settings.POT_LIFT_DURATION
+                target = state.room.placement_target(player)
+                self.assertEqual(target.size, (16, 16))
+                self.assertFalse(target.colliderect(player.hitbox))
+                surface = pygame.Surface((640, 480), pygame.SRCALPHA)
+                state.room.render_placement(surface, state.players.values())
+                self.assertEqual(surface.get_bounding_rect(), target)
+                self.assertTrue(state.room.try_put_down(player, state.players.values()))
+                self.assertEqual(box.hitbox, target)
+
+    def test_large_reception_box_does_not_count_as_delivered_order(self):
+        state = self.play()
+        box = state.room.objects[0]
+        state.room.dispatch_area.width = box.width
+        box.position.update(state.room.dispatch_area.topleft)
+        self.assertTrue(state.room.dispatch_area.contains(box.hitbox))
+        self.assertEqual(state.room.count_deliveries(), 0)
+        self.assertEqual(state.room.order_count, 2)
 
     def test_diagonal_movement_slides_along_box(self):
         state = self.play()
@@ -739,13 +843,13 @@ class ControllerTests(unittest.TestCase):
         player.lift(obj)
         self.game.update(settings.POT_LIFT_DURATION)
         player.position.update(327, 241)
-        for facing, expected in (('left', (256, 256)), ('right', (352, 256)),
-                                  ('up', (320, 192)), ('down', (320, 288))):
+        for facing, expected in (('left', (224, 256)), ('right', (352, 256)),
+                                  ('up', (320, 160)), ('down', (320, 288))):
             with self.subTest(facing=facing):
                 surface.fill((0, 0, 0, 0))
                 player.facing = facing
                 state.room.render_placement(surface, state.players.values())
-                self.assertEqual(surface.get_bounding_rect(), pygame.Rect(*expected, 32, 32))
+                self.assertEqual(surface.get_bounding_rect(), pygame.Rect(*expected, obj.width, obj.height))
                 self.assertEqual(surface.get_at(expected)[:3], settings.PLACEMENT_VALID_COLOR)
         self.assertTrue(state.room.try_put_down(player, state.players.values()))
         surface.fill((0, 0, 0, 0))
@@ -799,7 +903,11 @@ class ControllerTests(unittest.TestCase):
         self.game.update(settings.POT_LIFT_DURATION)
         surface = pygame.Surface((640, 480), pygame.SRCALPHA)
         state.room.render_placement(surface, state.players.values())
-        self.assertEqual(pygame.mask.from_surface(surface).count(), 2 * (32 * 32 - 28 * 28))
+        self.assertEqual(pygame.mask.from_surface(surface).count(), sum(
+            player.carrying.width * player.carrying.height
+            - (player.carrying.width - 4) * (player.carrying.height - 4)
+            for player in (first, second)
+        ))
         for player in (first, second):
             target = state.room.placement_target(player)
             self.assertEqual(surface.get_at(target.topleft)[:3], settings.PLACEMENT_VALID_COLOR)
@@ -899,7 +1007,7 @@ class ControllerTests(unittest.TestCase):
     def test_dispatch_counts_only_placed_objects_inside_area(self):
         state = self.play()
         area = state.room.dispatch_area
-        box = state.room.objects[0]
+        box = next(obj for obj in state.room.objects if obj.is_order)
         box.position.update(area.topleft)
         box.floor_position.update(box.position)
         self.assertEqual(state.room.count_deliveries(), 1)
@@ -911,20 +1019,21 @@ class ControllerTests(unittest.TestCase):
     def test_full_delivery_keeps_stars_and_accumulates_next_day(self):
         state = self.play()
         area = state.room.dispatch_area
-        for index, box in enumerate(state.room.objects):
+        for index, box in enumerate(obj for obj in state.room.objects if obj.is_order):
             box.position.update(area.left, area.top + index * settings.TILE_RENDER_SIZE)
             box.floor_position.update(box.position)
         self.game._Game__update(settings.MATCH_DURATION)
         result = self.game.state_machine.current
         self.assertIsInstance(result, GameOverState)
-        self.assertEqual(result.delivered, 4)
-        self.assertEqual(self.game.delivered, 4)
+        self.assertEqual(result.delivered, 2)
+        self.assertEqual(result.total, 2)
+        self.assertEqual(self.game.delivered, 2)
         self.assertEqual(self.game.stars, settings.MAX_STARS)
         self.game._Game__render()
         self.key_tap(pygame.K_RETURN)
         self.assertIsInstance(self.game.state_machine.current, PlayState)
         self.assertEqual(self.game.day, 2)
-        self.assertEqual(self.game.delivered, 4)
+        self.assertEqual(self.game.delivered, 2)
         self.assertEqual(self.game.state_machine.current.clock_text, '8:00 AM')
 
     def test_five_incomplete_days_end_game_and_new_game_resets_score(self):
@@ -1024,7 +1133,7 @@ class ControllerTests(unittest.TestCase):
     def test_keyboard_can_place_object_in_dispatch_using_existing_controls(self):
         state = self.keyboard_play()
         player = state.players[1]
-        box = state.room.objects[0]
+        box = next(obj for obj in state.room.objects if obj.is_order)
         target = state.room.dispatch_area
         player.position.update(target.left - settings.PLAYER_COLLISION_WIDTH / 2,
                                target.top)

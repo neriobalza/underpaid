@@ -76,7 +76,7 @@ un jugador: pulsa A o Enter de nuevo para entrar en el centro.
 | Recorrer izquierda, centro y derecha | Joystick izquierdo | Flechas izquierda/derecha |
 | Cancelar confirmación | B | Delete (también Backspace) |
 | Mover el personaje en la partida | Joystick izquierdo | W/A/S/D |
-| Levantar / colocar una vasija en la partida | A | Enter |
+| Levantar / colocar una caja en la partida | A | Enter |
 
 1. Pulsa **A en el mando o Enter en el teclado** para aparecer en el centro.
 2. Usa el joystick izquierdo o las flechas para recorrer **Player 1 ↔ centro ↔ Player 2**.
@@ -138,18 +138,18 @@ en segundos reales.
 ## Puntuación y derrota
 
 El prototipo comienza con **5 estrellas**. La zona de despacho es el rectángulo
-amarillo junto a la pared derecha. Coloca los cuatro objetos en sus cuatro casillas
-antes de las **4:00 PM**. Al finalizar la jornada se cuentan únicamente los objetos
+amarillo junto a la pared derecha. Coloca las cajas de pedidos (medianas y pequeñas)
+antes de las **4:00 PM**. Al finalizar la jornada se cuentan únicamente las cajas de pedidos
 en el suelo y completamente dentro de esa zona; cargar uno sobre la cabeza no lo entrega.
 
-Cada objeto entregado suma un punto al total acumulado. Si falta al menos uno,
-el almacén pierde una estrella; entregar los cuatro conserva las estrellas.
+Cada caja de pedido entregada suma un punto al total acumulado. Si falta al menos una,
+el almacén pierde una estrella; entregar todos los pedidos conserva las estrellas.
 El resumen permite empezar otra jornada mientras queden estrellas, sin límite de
 días ni de puntos. **Perder las cinco estrellas termina el juego**. Elegir Jugar
 desde el menú inicia una sesión nueva con cinco estrellas y cero puntos.
 
-Las vasijas actuales representan provisionalmente los paquetes. Los pedidos,
-el empaquetado y los camiones todavía no están implementados. La desconexión de
+Las cajas grandes representan la recepción de productos y no cuentan como pedidos
+entregados. La generación de pedidos, el empaquetado y los camiones todavía no están implementados. La desconexión de
 un mando conserva al participante conectado y vuelve a selección; al confirmar
 de nuevo se reinicia la jornada, manteniendo la puntuación de la sesión.
 
@@ -173,25 +173,38 @@ locales `projects/01-pong` a `projects/08-throw_a_bird`, especialmente `06-princ
 
 ## Objetos levantables
 
-La sala contiene cuatro objetos sólidos (`src/world/Box.py`) que usan la misma
-vasija de `06-princess`: el tile 16 del tilesheet, dibujado a 32 × 32 píxeles.
-Su colisión se calcula contra la mitad inferior de los personajes. Los jugadores
+La sala comienza con dos cajas grandes, una mediana y una pequeña (`src/world/Box.py`).
+Cada tipo usa su propio sprite de `assets/graphics/`, escalado sin suavizado para conservar el pixel art.
+
+| Tipo (`box_type`) | Tamaño | Sprite | Uso |
+|-------------------|--------|--------|-----|
+| `large` | 64 × 64 píxeles | `big_box.png` | Recepción de productos |
+| `medium` | 32 × 32 píxeles | `medium_box.png` | Pedidos medianos |
+| `small` | 16 × 16 píxeles | `small_box.png` | Pedidos pequeños |
+
+`Box(x, y, box_type="medium")` permite crear cada tipo; los tipos desconocidos se rechazan.
+La colisión ocupa el tamaño de la caja y se calcula contra la mitad inferior de los personajes. Los jugadores
 pueden deslizarse junto a los objetos sin atravesarlos.
 
-Acércate a una vasija, mira hacia ella y pulsa **A en el mando o Enter en el teclado**
+Acércate a una caja, mira hacia ella y pulsa **A en el mando o Enter en el teclado**
 para levantarla. Durante los 0,3 segundos del levantamiento el personaje permanece
-quieto; después puede caminar llevando el objeto sobre la cabeza. La vasija levantada
+quieto; después puede caminar llevando el objeto sobre la cabeza. La caja levantada
 deja de bloquear el suelo y sólo puede pertenecer a un jugador. Cada personaje puede
 cargar un objeto a la vez.
+Mientras carga, la velocidad es de **90 píxeles/s con una caja grande**,
+**120 píxeles/s con una mediana** y **180 píxeles/s con una pequeña**
+(la velocidad normal). Colocar la caja restaura la velocidad normal.
+Estos límites se aplican también a las diagonales; el joystick conserva
+el movimiento proporcional a su inclinación.
 Al cargar, el personaje utiliza `assets/graphics/player_pot_walk.png` para caminar
 con los brazos levantados. Cada jugador mantiene su propia animación de carga.
 
-Mientras cargas una vasija, pulsa **A o Enter de nuevo** para colocarla en el suelo
+Mientras cargas una caja, pulsa **A o Enter de nuevo** para colocarla en el suelo
 delante del personaje, alineada a la cuadrícula de tiles de 32 × 32 píxeles.
-Sólo se muestra la casilla en la dirección que miras mientras cargas: verde si
-puedes colocar la vasija y roja si está bloqueada o todavía estás levantándola.
-Si hay una pared, otra vasija o un jugador en ese lugar, conservas
-la vasija sobre la cabeza hasta encontrar espacio. Al colocarla vuelve a bloquear
+Sólo se muestra el área que ocupa la caja en la dirección que miras mientras cargas: verde si
+puedes colocarla y roja si está bloqueada o todavía estás levantándola.
+Si hay una pared, otra caja o un jugador en ese lugar, conservas
+la caja sobre la cabeza hasta encontrar espacio. Al colocarla vuelve a bloquear
 el paso y cualquiera de los dos jugadores puede levantarla de nuevo.
 
 ## Verificación

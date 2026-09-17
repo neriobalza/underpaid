@@ -23,7 +23,6 @@ class Room:
             self.tilemap.pixel_width, self.tilemap.pixel_height,
         )
         self.walkable_area = self.bounds.inflate(-2 * size, -2 * size)
-        
         # Valores por defecto
         self.dispatch_area = pygame.Rect(self.walkable_area.right - size, self.bounds.top + 5 * size, size, 4 * size)
         self.unloading_area = pygame.Rect(self.bounds.x, self.bounds.y, size, size)
@@ -35,10 +34,7 @@ class Room:
                 layer_type = layer.get("type")
                 layer_name = layer.get("name")
                 if layer_type == "objectgroup":
-                    if layer_name == "boxes":
-                        for obj in layer.get("objects", []):
-                            self.objects.append(Box(self.bounds.x + obj.get("x", 0), self.bounds.y + obj.get("y", 0)))
-                    elif layer_name == "dispatch_area":
+                    if layer_name == "dispatch_area":
                         if layer.get("objects"):
                             obj = layer["objects"][0]
                             self.dispatch_area = pygame.Rect(
@@ -52,6 +48,16 @@ class Room:
                                 self.bounds.x + obj.get("x", 0), self.bounds.y + obj.get("y", 0),
                                 obj.get("width", 0), obj.get("height", 0)
                             )
+
+        # Spawneamos las cajas como estaban en la rama main
+        self.objects = [
+            Box(self.bounds.x + col * size, self.bounds.y + row * size, box_type)
+            for col, row, box_type in (
+                (3, 3, "large"), (3, self.tilemap.rows - 4, "large"),
+                (self.tilemap.cols - 4, 3, "medium"),
+                (self.tilemap.cols - 4, self.tilemap.rows - 4, "small"),
+            )
+        ]
 
         # La sala es estática: se dibuja una vez y se reutiliza cada frame.
         self.background = pygame.Surface(self.bounds.size)
@@ -71,11 +77,16 @@ class Room:
         pygame.draw.rect(surface, (128, 128, 128), self.unloading_area, width=2)
 
     def count_deliveries(self) -> int:
-        """Sólo los objetos colocados por completo en despacho se entregan."""
-        return sum(obj.solid and self.dispatch_area.contains(obj.hitbox) for obj in self.objects)
+        """Sólo las cajas de pedidos colocadas en despacho se entregan."""
+        return sum(obj.is_order and obj.solid and self.dispatch_area.contains(obj.hitbox)
+                   for obj in self.objects)
+
+    @property
+    def order_count(self) -> int:
+        return sum(obj.is_order for obj in self.objects)
 
     def try_lift(self, player) -> bool:
-        """Busca una vasija próxima delante de los pies del jugador."""
+        """Busca una caja próxima delante de los pies del jugador."""
         if player.carrying is not None:
             return False
         feet = player.hitbox
@@ -99,21 +110,24 @@ class Room:
         return self.try_put_down(player, players)
 
     def placement_target(self, player) -> pygame.Rect:
-        """Casilla de la cuadrícula más próxima frente a los pies."""
+        """Área de la caja alineada a la cuadrícula delante de los pies."""
         feet = player.hitbox
         size = settings.TILE_RENDER_SIZE
+        width, height = (size, size) if player.carrying is None else (
+            player.carrying.width, player.carrying.height,
+        )
         col = (feet.centerx - self.bounds.left) // size
         row = (feet.centery - self.bounds.top) // size
         if player.facing == "left":
-            col = (feet.left - size - self.bounds.left) // size
+            col = (feet.left - width - self.bounds.left) // size
         elif player.facing == "right":
             col = math.ceil((feet.right - self.bounds.left) / size)
         elif player.facing == "up":
-            row = (feet.top - size - self.bounds.top) // size
+            row = (feet.top - height - self.bounds.top) // size
         else:
             row = math.ceil((feet.bottom - self.bounds.top) / size)
         return pygame.Rect(self.bounds.left + col * size,
-                           self.bounds.top + row * size, size, size)
+                           self.bounds.top + row * size, width, height)
 
     def can_place(self, player, target, players) -> bool:
         if player.carrying is None or player.lift_elapsed < settings.POT_LIFT_DURATION:
@@ -140,7 +154,7 @@ class Room:
             surface.blit(overlay, target)
 
     def try_put_down(self, player, players) -> bool:
-        """Coloca la vasija en la misma casilla que marca la vista previa."""
+        """Coloca la caja en la misma área que marca la vista previa."""
         target = self.placement_target(player)
         if not self.can_place(player, target, players):
             return False

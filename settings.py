@@ -83,8 +83,37 @@ TILE_TOP_WALLS = (58, 59, 60)
 TILE_BOTTOM_WALLS = (79, 80, 81)
 TILE_LEFT_WALLS = (77, 96, 115)
 TILE_RIGHT_WALLS = (78, 97, 116)
-POT_TILE = 16
+BOX_SIZES = {
+    "large": (2 * TILE_RENDER_SIZE, 2 * TILE_RENDER_SIZE),
+    "medium": (TILE_RENDER_SIZE, TILE_RENDER_SIZE),
+    "small": (TILE_RENDER_SIZE // 2, TILE_RENDER_SIZE // 2),
+}
+BOX_SPRITES = {
+    "large": "big_box.png",
+    "medium": "medium_box.png",
+    "small": "small_box.png",
+}
+BOX_SPEED_MULTIPLIERS = {
+    "large": 1 / 2,
+    "medium": 2 / 3,
+    "small": 1,
+}
 POT_LIFT_DURATION = 0.3
+
+
+@lru_cache(maxsize=3)
+def load_box_sprite(box_type: str = "large") -> pygame.Surface:
+    if box_type not in BOX_SPRITES:
+        raise ValueError("Tipo de caja inválido: usa large, medium o small")
+    return pygame.image.load(BASE_DIR / "assets" / "graphics" / BOX_SPRITES[box_type]).convert_alpha()
+
+
+@lru_cache(maxsize=3)
+def load_box_image(box_type: str) -> pygame.Surface:
+    if box_type not in BOX_SIZES:
+        raise ValueError("Tipo de caja inválido: usa large, medium o small")
+    # Escalado sin suavizado para conservar el estilo pixel art del sprite.
+    return pygame.transform.scale(load_box_sprite(box_type), BOX_SIZES[box_type])
 
 
 @lru_cache(maxsize=1)

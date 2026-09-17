@@ -200,7 +200,10 @@ class Player:
         # diagonales, conservando el movimiento lento del joystick analógico.
         if direction.length_squared() > 1:
             direction.normalize_ip()
-        self._move(direction * settings.PLAYER_SPEED * dt, room, obstacles)
+        speed = settings.PLAYER_SPEED
+        if self.carrying is not None:
+            speed *= settings.BOX_SPEED_MULTIPLIERS[self.carrying.box_type]
+        self._move(direction * speed * dt, room, obstacles)
         self._update_carried_object(dt)
         if direction.length_squared() == 0:
             self.animation.reset()
