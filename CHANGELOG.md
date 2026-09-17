@@ -7,6 +7,14 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-17
+
+### Added
+
+- Sistema de cuadros de diálogo flotantes interactivos con retratos animados, voces procedurales estilo 8-bits y un evento matutino del jefe.
+
+## [0.1.0] - 2026-09-17
+
 ### Added
 
 - Zonas visuales dedicadas en el suelo del almacén: área gris para recepción de paquetes y área amarilla para despachos.
