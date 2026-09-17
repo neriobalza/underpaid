@@ -2,6 +2,7 @@
 
 import pygame
 from gale.state import BaseState
+from gale.input_handler import apply_deadzone
 
 import settings
 from src.entity.Player import Player
@@ -44,7 +45,8 @@ class PlayerSelectState(BaseState):
 
     def move_choice(self, instance_id: int | str, value: float) -> None:
         # Una inclinación avanza una posición; soltar rearma el joystick.
-        if abs(value) <= settings.STICK_DEADZONE:
+        value = apply_deadzone(value, settings.STICK_DEADZONE)
+        if value == 0:
             self.stick_ready[instance_id] = True
             return
         if abs(value) < settings.SELECTION_THRESHOLD or not self.stick_ready[instance_id]:

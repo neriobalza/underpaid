@@ -2,7 +2,7 @@
 
 Base de videojuego con Gale y Pygame: menú principal, configuración de
 pantalla, selección de dos jugadores con mandos o mando y teclado, y movimiento independiente.
-Usa las dependencias compartidas del repositorio y la fuente incluida en Pygame.
+Usa dependencias propias del proyecto y la fuente incluida en Pygame.
 
 ## Ejecutar
 
@@ -10,7 +10,7 @@ Desde la raíz del repositorio, con el entorno virtual activado:
 
 ```bash
 python -m pip install -r requirements.txt
-python 09-underpaid/main.py
+python main.py
 ```
 
 ## Pantalla
@@ -58,6 +58,8 @@ Puedes iniciar en pantalla completa configurando `FULLSCREEN = True` en `setting
 - `src/states/game/PlayState.py`: movimiento independiente de los dos jugadores.
 - `src/entity/Player.py`: personaje y vínculo exclusivo con su mando o teclado.
 - `src/input/ControllerManager.py`: inicialización de mandos y detección de conexiones.
+- `src/input/commands.py`: comandos de movimiento del teclado con Gale.
+- `src/states/game/GameOverState.py`: resumen diario y condición de derrota.
 
 ## Dos jugadores
 
@@ -127,11 +129,47 @@ franja blanca de un tile de alto, y avanza desde **8:00 AM** hasta **4:00 PM**,
 como un horario de trabajo. Cada minuto real equivale a una hora del juego:
 tras cuatro minutos reales marca **12:00 PM**.
 Se implementa con `gale.timer.Timer.tween`, actualizado por el bucle de Gale.
-Cuando termina el tiempo se vuelve al menú principal. Salir de la partida cancela
+Cuando termina el tiempo se abre el resumen de jornada. Salir de la partida cancela
 su reloj; una nueva partida comienza a las **8:00 AM**.
 `CLOCK_START_HOUR`, `CLOCK_END_HOUR` y `SECONDS_PER_GAME_HOUR` en `settings.py`
 definen el horario y la velocidad del reloj; `MATCH_DURATION` calcula la duración
 en segundos reales.
+
+## Puntuación y derrota
+
+El prototipo comienza con **5 estrellas**. La zona de despacho es el rectángulo
+amarillo junto a la pared derecha. Coloca los cuatro objetos en sus cuatro casillas
+antes de las **4:00 PM**. Al finalizar la jornada se cuentan únicamente los objetos
+en el suelo y completamente dentro de esa zona; cargar uno sobre la cabeza no lo entrega.
+
+Cada objeto entregado suma un punto al total acumulado. Si falta al menos uno,
+el almacén pierde una estrella; entregar los cuatro conserva las estrellas.
+El resumen permite empezar otra jornada mientras queden estrellas, sin límite de
+días ni de puntos. **Perder las cinco estrellas termina el juego**. Elegir Jugar
+desde el menú inicia una sesión nueva con cinco estrellas y cero puntos.
+
+Las vasijas actuales representan provisionalmente los paquetes. Los pedidos,
+el empaquetado y los camiones todavía no están implementados. La desconexión de
+un mando conserva al participante conectado y vuelve a selección; al confirmar
+de nuevo se reinicia la jornada, manteniendo la puntuación de la sesión.
+
+## Integración con Gale
+
+`Underpaid` hereda de `gale.game.Game`, que controla el bucle, escala la superficie
+virtual, despacha las entradas y actualiza `Timer` una sola vez por frame. Las
+cinco escenas heredan de `BaseState` y se crean con fábricas de `StateMachine`.
+El reloj se cancela en `PlayState.exit()`, incluso al cerrar la ventana.
+
+`ControllerManager` llama a `InputHandler.init_gamepads()` al iniciar, conserva
+los controladores SDL para recibir eventos `CONTROLLER*` y reconcilia los IDs de
+instancia con `InputHandler.gamepads`. Los errores de desconexión durante la
+enumeración o el cierre no interrumpen esa limpieza. Cada personaje filtra su
+entrada por propietario antes de ejecutar los comandos de `CommandBindings` o
+leer los ejes analógicos; sus animaciones de Gale son independientes.
+
+Referencias: [entradas y mandos](https://r3mmurd.github.io/Gale/examples/input_handler.html),
+[máquina de estados](https://r3mmurd.github.io/Gale/examples/state.html) y los proyectos
+locales `projects/01-pong` a `projects/08-throw_a_bird`, especialmente `06-princess`.
 
 ## Objetos levantables
 
@@ -158,9 +196,10 @@ el paso y cualquiera de los dos jugadores puede levantarla de nuevo.
 
 ## Verificación
 
-Las pruebas utilizan eventos de teclado y eventos SDL con mandos simulados. Desde `09-underpaid`,
+Las pruebas utilizan eventos de teclado y eventos SDL con mandos simulados. Desde la raíz del proyecto,
 con el entorno virtual activado:
 
 ```bash
 python -m unittest discover -s tests -v
+python -m compileall -q main.py settings.py src tests
 ```

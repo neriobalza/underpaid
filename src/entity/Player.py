@@ -1,18 +1,28 @@
 """Personaje vinculado exclusivamente a un mando o al teclado."""
 
 import pygame
+from gale.command import CommandBindings
 from gale.animation import Animation
+from gale.input_handler import apply_deadzone
 
 import settings
+from src.input.commands import MOVEMENT_COMMANDS
 
 
 class Player:
     def __init__(self, input_source: int | str) -> None:
+        if input_source != settings.KEYBOARD_INPUT and (
+            type(input_source) is not int or input_source < 0
+        ):
+            raise ValueError("La entrada debe ser el teclado o un ID de instancia válido")
         self.input_source = input_source
         self.number: int | None = None
         self.position = pygame.Vector2(settings.VIRTUAL_WIDTH / 2, 260)
         self.direction = pygame.Vector2()
         self.keyboard_keys: set[int] = set()
+        self.command_bindings = CommandBindings()
+        for action, (press, release) in MOVEMENT_COMMANDS.items():
+            self.command_bindings.bind(action, press=press, release=release)
         self.facing = "down"
         self.animations = {
             direction: Animation(frames, settings.PLAYER_FRAME_INTERVAL)
@@ -144,27 +154,31 @@ class Player:
     def on_input(self, input_id, input_data) -> None:
         if self.number is None:
             return
+        interaction = (
+            self.uses_keyboard and input_id == "confirm"
+            and getattr(input_data, "key", None) == pygame.K_RETURN
+        ) or (
+            not self.uses_keyboard and input_id == "pad_a"
+            and getattr(input_data, "gamepad_id", None) == self.controller_id
+        )
+        if interaction:
+            if input_data.pressed and not self.interact_held:
+                self.interact_requested = True
+            self.interact_held = input_data.pressed
+            return
         if self.uses_keyboard:
             if not input_id.startswith("keyboard_") or not hasattr(input_data, "key"):
                 return
             key = input_data.key
             if key not in (pygame.K_w, pygame.K_a, pygame.K_s, pygame.K_d):
                 return
-            if input_data.pressed:
-                self.keyboard_keys.add(key)
-            else:
-                self.keyboard_keys.discard(key)
-            self.direction.update(
-                int(pygame.K_d in self.keyboard_keys) - int(pygame.K_a in self.keyboard_keys),
-                int(pygame.K_s in self.keyboard_keys) - int(pygame.K_w in self.keyboard_keys),
-            )
+            self.command_bindings.dispatch(self, input_id, input_data)
             return
         if getattr(input_data, "gamepad_id", None) != self.controller_id:
             return
         if input_id not in ("pad_x", "pad_y"):
             return
-        value = input_data.value
-        value = 0 if abs(value) <= settings.STICK_DEADZONE else value
+        value = apply_deadzone(input_data.value, settings.STICK_DEADZONE)
         if input_id == "pad_x":
             self.direction.x = value
         else:

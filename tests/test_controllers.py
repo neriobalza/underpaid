@@ -15,6 +15,8 @@ from gale.timer import Timer
 from src.Underpaid import Underpaid
 from src.states.game.PlayerSelectState import PlayerSelectState
 from src.states.game.PlayState import PlayState
+from src.states.game.GameOverState import GameOverState
+from src.entity.Player import Player
 from src.world.Box import Box
 import settings
 
@@ -890,8 +892,152 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(state.clock_text, '3:59 PM')
         self.game._Game__update(0.5)
         self.assertEqual(state.clock_text, '4:00 PM')
-        self.assertEqual(type(self.game.state_machine.current).__name__, 'MainMenuState')
+        self.assertIsInstance(self.game.state_machine.current, GameOverState)
+        self.assertEqual(self.game.stars, settings.MAX_STARS - 1)
         self.assertNotIn(state.match_clock, Timer.items)
+
+    def test_dispatch_counts_only_placed_objects_inside_area(self):
+        state = self.play()
+        area = state.room.dispatch_area
+        box = state.room.objects[0]
+        box.position.update(area.topleft)
+        box.floor_position.update(box.position)
+        self.assertEqual(state.room.count_deliveries(), 1)
+        state.players[1].lift(box)
+        self.assertEqual(state.room.count_deliveries(), 0)
+        state.players[1].put_down((area.left - 1, area.top))
+        self.assertEqual(state.room.count_deliveries(), 0)
+
+    def test_full_delivery_keeps_stars_and_accumulates_next_day(self):
+        state = self.play()
+        area = state.room.dispatch_area
+        for index, box in enumerate(state.room.objects):
+            box.position.update(area.left, area.top + index * settings.TILE_RENDER_SIZE)
+            box.floor_position.update(box.position)
+        self.game._Game__update(settings.MATCH_DURATION)
+        result = self.game.state_machine.current
+        self.assertIsInstance(result, GameOverState)
+        self.assertEqual(result.delivered, 4)
+        self.assertEqual(self.game.delivered, 4)
+        self.assertEqual(self.game.stars, settings.MAX_STARS)
+        self.game._Game__render()
+        self.key_tap(pygame.K_RETURN)
+        self.assertIsInstance(self.game.state_machine.current, PlayState)
+        self.assertEqual(self.game.day, 2)
+        self.assertEqual(self.game.delivered, 4)
+        self.assertEqual(self.game.state_machine.current.clock_text, '8:00 AM')
+
+    def test_five_incomplete_days_end_game_and_new_game_resets_score(self):
+        self.play()
+        for day in range(1, settings.MAX_STARS + 1):
+            self.game._Game__update(settings.MATCH_DURATION)
+            result = self.game.state_machine.current
+            self.assertIsInstance(result, GameOverState)
+            self.assertEqual(self.game.day, day)
+            self.assertEqual(self.game.stars, settings.MAX_STARS - day)
+            if self.game.stars:
+                result.next_day()
+        result.next_day()
+        self.assertIs(self.game.state_machine.current, result)
+        self.game._Game__render()
+        self.key_tap(pygame.K_RETURN)
+        self.assertEqual(type(self.game.state_machine.current).__name__, 'MainMenuState')
+        self.key_tap(pygame.K_RETURN)
+        self.assertEqual(self.game.stars, settings.MAX_STARS)
+        self.assertEqual(self.game.delivered, 0)
+        self.assertEqual(self.game.day, 1)
+
+    def test_next_day_returns_to_selection_when_controller_disconnected(self):
+        self.keyboard_play()
+        self.game._Game__update(settings.MATCH_DURATION)
+        self.devices.clear()
+        self.game.controllers.refresh()
+        self.game.state_machine.current.next_day()
+        state = self.game.state_machine.current
+        self.assertIsInstance(state, PlayerSelectState)
+        self.assertEqual(set(state.participants), {settings.KEYBOARD_INPUT})
+
+    def test_quit_cancels_clock_releases_devices_and_unregisters_listener(self):
+        state = self.play()
+        state.players[1].lift(state.room.objects[0])
+        self.game.quit()
+        self.assertTrue(state.match_clock.to_remove)
+        self.assertIsNone(state.players[1].carrying)
+        self.assertNotIn(self.game, InputHandler.listeners)
+        self.assertEqual(InputHandler.gamepads, {})
+        self.assertTrue(all(device.closed for device in self.devices))
+        self.game.quit()
+
+    def test_window_close_cleans_up_even_when_gale_raises_system_exit(self):
+        state = self.play()
+        pygame.event.clear()
+        pygame.event.post(pygame.event.Event(pygame.QUIT))
+        with self.assertRaises(SystemExit):
+            self.game.exec()
+        self.assertTrue(state.match_clock.to_remove)
+        self.assertNotIn(self.game, InputHandler.listeners)
+        self.assertEqual(InputHandler.gamepads, {})
+        self.assertFalse(pygame.get_init())
+        pygame.init()
+
+    def test_controller_errors_do_not_break_refresh_or_cleanup(self):
+        with patch('pygame.joystick.Joystick', side_effect=pygame.error('disconnected')):
+            self.game.controllers.refresh()
+        self.assertEqual(self.game.controllers.controllers, {})
+        self.assertEqual(InputHandler.gamepads, {})
+        self.game.controllers.refresh()
+        with patch.object(self.devices[0], 'quit', side_effect=pygame.error('already closed')):
+            self.game.controllers.close()
+        self.assertEqual(self.game.controllers.controllers, {})
+        self.assertEqual(InputHandler.gamepads, {})
+
+    def test_gale_gamepads_follow_hotplug_instance_ids(self):
+        self.assertEqual(set(InputHandler.gamepads), {71, 203})
+        self.devices.append(Device(999))
+        InputHandler.handle_input(pygame.event.Event(pygame.CONTROLLERDEVICEADDED, device_index=2))
+        self.game.controllers.refresh()
+        self.assertTrue(self.game.controllers.is_connected(999))
+        self.assertIn(999, InputHandler.gamepads)
+        self.devices.pop()
+        InputHandler.handle_input(pygame.event.Event(pygame.CONTROLLERDEVICEREMOVED, instance_id=999))
+        self.game.controllers.refresh()
+        self.assertFalse(self.game.controllers.is_connected(999))
+        self.assertNotIn(999, InputHandler.gamepads)
+
+    def test_invalid_player_sources_and_duplicate_inputs_are_rejected(self):
+        for source in (-1, 'unknown', None, True):
+            with self.assertRaises(ValueError):
+                Player(source)
+        state = self.play()
+        state.players[2].input_source = state.players[1].input_source
+        with self.assertRaises(ValueError):
+            self.game.state_machine.change('play', players=state.players)
+
+    def test_failed_initialization_does_not_leave_input_listener(self):
+        listeners = list(InputHandler.listeners)
+        with patch('settings.create_fonts', side_effect=pygame.error('font unavailable')):
+            with self.assertRaises(pygame.error):
+                Underpaid()
+        self.assertEqual(InputHandler.listeners, listeners)
+        pygame.init()
+
+    def test_keyboard_can_place_object_in_dispatch_using_existing_controls(self):
+        state = self.keyboard_play()
+        player = state.players[1]
+        box = state.room.objects[0]
+        target = state.room.dispatch_area
+        player.position.update(target.left - settings.PLAYER_COLLISION_WIDTH / 2,
+                               target.top)
+        player.facing = 'right'
+        player.lift(box)
+        self.game.update(settings.POT_LIFT_DURATION)
+        self.key_tap(pygame.K_RETURN)
+        self.game.update(0)
+        self.assertIsNone(player.carrying)
+        self.assertTrue(target.contains(box.hitbox))
+        self.game._Game__update(settings.MATCH_DURATION)
+        self.assertEqual(self.game.delivered, 1)
+        self.assertEqual(self.game.stars, settings.MAX_STARS - 1)
 
     def test_exiting_match_cancels_clock_and_new_match_starts_at_eight_am(self):
         old = self.play()

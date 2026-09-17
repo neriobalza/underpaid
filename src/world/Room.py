@@ -20,6 +20,10 @@ class Room:
             self.tilemap.pixel_width, self.tilemap.pixel_height,
         )
         self.walkable_area = self.bounds.inflate(-2 * size, -2 * size)
+        self.dispatch_area = pygame.Rect(
+            self.walkable_area.right - size, self.bounds.top + 5 * size,
+            size, 4 * size,
+        )
         self._generate_tiles()
         self.objects = [
             Box(self.bounds.x + col * size, self.bounds.y + row * size)
@@ -68,6 +72,11 @@ class Room:
 
     def render(self, surface: pygame.Surface) -> None:
         surface.blit(self.background, self.bounds)
+        pygame.draw.rect(surface, settings.ACCENT_COLOR, self.dispatch_area, width=2)
+
+    def count_deliveries(self) -> int:
+        """Sólo los objetos colocados por completo en despacho se entregan."""
+        return sum(obj.solid and self.dispatch_area.contains(obj.hitbox) for obj in self.objects)
 
     def try_lift(self, player) -> bool:
         """Busca una vasija próxima delante de los pies del jugador."""

@@ -11,15 +11,27 @@ from src.states.game.MainMenuState import MainMenuState
 from src.states.game.PlayState import PlayState
 from src.states.game.SettingsState import SettingsState
 from src.states.game.PlayerSelectState import PlayerSelectState
+from src.states.game.GameOverState import GameOverState
 from src.input.ControllerManager import ControllerManager
 
 
 class Underpaid(Game):
+    def __init__(self, *args, **kwargs) -> None:
+        self.closed = False
+        try:
+            super().__init__(*args, **kwargs)
+        except Exception:
+            # Game registra el listener antes de ejecutar init().
+            self.quit()
+            pygame.quit()
+            raise
+
     def init(self) -> None:
         self.fonts = settings.create_fonts()
         self.controllers = ControllerManager()
         self.resolution_index = settings.DEFAULT_RESOLUTION_INDEX
         self.fullscreen = False
+        self.reset_score()
         if settings.FULLSCREEN:
             self.set_display(self.resolution_index, True)
         self.state_machine = StateMachine({
@@ -27,8 +39,18 @@ class Underpaid(Game):
             "settings": lambda sm: SettingsState(sm, self),
             "play": lambda sm: PlayState(sm, self),
             "player_select": lambda sm: PlayerSelectState(sm, self),
+            "game_over": lambda sm: GameOverState(sm, self),
         })
         self.state_machine.change("main_menu")
+
+    def reset_score(self) -> None:
+        self.stars = settings.MAX_STARS
+        self.delivered = 0
+        self.day = 1
+
+    def start_game(self) -> None:
+        self.reset_score()
+        self.state_machine.change("player_select")
 
     def set_resolution(self, index: int) -> None:
         """Elige la resolución de ventana y conserva el modo actual."""
@@ -87,11 +109,11 @@ class Underpaid(Game):
 
     def on_input(self, input_id: str, input_data: InputData) -> None:
         if input_id == "cancel" and isinstance(
-            self.state_machine.current, (MainMenuState, SettingsState)
+            self.state_machine.current, (MainMenuState, SettingsState, GameOverState)
         ):
             input_id = "back"
         if input_id.startswith("keyboard_") and isinstance(
-            self.state_machine.current, (MainMenuState, SettingsState)
+            self.state_machine.current, (MainMenuState, SettingsState, GameOverState)
         ):
             input_id = input_id.removeprefix("keyboard_")
         if input_id.startswith("pad_"):
@@ -100,7 +122,7 @@ class Underpaid(Game):
                 return
             # Los menús usan cruceta/A/B; selección y partida reciben el ID
             # original para conservar la propiedad de cada personaje.
-            if isinstance(self.state_machine.current, (MainMenuState, SettingsState)):
+            if isinstance(self.state_machine.current, (MainMenuState, SettingsState, GameOverState)):
                 input_id = {
                     "pad_a": "confirm", "pad_b": "back",
                     "pad_up": "up", "pad_down": "down",
@@ -111,5 +133,21 @@ class Underpaid(Game):
         self.state_machine.on_input(input_id, input_data)
 
     def quit(self) -> None:
-        self.controllers.close()
-        super().quit()
+        if self.closed:
+            return
+        self.closed = True
+        try:
+            if hasattr(self, "state_machine"):
+                self.state_machine.current.exit()
+        finally:
+            if hasattr(self, "controllers"):
+                self.controllers.close()
+            super().quit()
+
+    def exec(self) -> None:
+        try:
+            super().exec()
+        finally:
+            # Gale sale con SystemExit al cerrar la ventana de SDL.
+            self.quit()
+            pygame.quit()

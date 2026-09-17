@@ -13,7 +13,7 @@ class MainMenuState(BaseState):
 
     def enter(self) -> None:
         self.menu = Menu(self.game, [
-            ("Jugar", lambda: self.state_machine.change("player_select")),
+            ("Jugar", self.game.start_game),
             ("Configuración", lambda: self.state_machine.change("settings")),
             ("Salir", self.game.quit),
         ])

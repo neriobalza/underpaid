@@ -16,6 +16,10 @@ class PlayState(BaseState):
 
     def enter(self, players) -> None:
         self.players = dict(players)
+        if set(self.players) != {1, 2} or any(
+            player.number != number for number, player in self.players.items()
+        ) or len({player.input_source for player in self.players.values()}) != 2:
+            raise ValueError("La partida requiere dos personajes con entradas diferentes")
         self.room = Room()
         for player in self.players.values():
             player.stop()
@@ -36,7 +40,12 @@ class PlayState(BaseState):
 
     def _finish_match(self) -> None:
         if self.state_machine.current is self:
-            self.state_machine.change("main_menu")
+            delivered = self.room.count_deliveries()
+            self.game.delivered += delivered
+            if delivered < len(self.room.objects):
+                self.game.stars = max(0, self.game.stars - 1)
+            self.state_machine.change("game_over", players=self.players, delivered=delivered,
+                                      total=len(self.room.objects))
 
     def update(self, dt: float) -> None:
         connected = {
@@ -53,8 +62,10 @@ class PlayState(BaseState):
                 self.room.interact(player, self.players.values())
 
     def exit(self) -> None:
-        self.match_clock.remove()
-        for player in self.players.values():
+        if hasattr(self, "match_clock"):
+            self.match_clock.remove()
+        for player in getattr(self, "players", {}).values():
+            player.stop()
             player.clear_carrying()
 
     def on_input(self, input_id, input_data) -> None:
@@ -62,17 +73,6 @@ class PlayState(BaseState):
             self.state_machine.change("main_menu")
             return
         for player in self.players.values():
-            interaction = (
-                player.uses_keyboard and input_id == "confirm"
-                and getattr(input_data, "key", None) == pygame.K_RETURN
-            ) or (
-                not player.uses_keyboard and input_id == "pad_a"
-                and getattr(input_data, "gamepad_id", None) == player.controller_id
-            )
-            if interaction:
-                if input_data.pressed and not player.interact_held:
-                    player.interact_requested = True
-                player.interact_held = input_data.pressed
             player.on_input(input_id, input_data)
 
     def render(self, surface) -> None:
@@ -86,3 +86,10 @@ class PlayState(BaseState):
                          (0, 0, settings.VIRTUAL_WIDTH, settings.CLOCK_BAR_HEIGHT))
         draw_text(surface, self.clock_text, self.game.fonts["medium"],
                   settings.CLOCK_BAR_HEIGHT // 2, settings.BACKGROUND_COLOR)
+        label = self.game.fonts["small"].render(
+            f"Día {self.game.day} · {self.game.stars}/{settings.MAX_STARS} estrellas",
+            True, settings.BACKGROUND_COLOR,
+        )
+        surface.blit(label, (20, 7))
+        label = self.game.fonts["small"].render("Despacho: borde amarillo", True, settings.BACKGROUND_COLOR)
+        surface.blit(label, (settings.VIRTUAL_WIDTH - label.get_width() - 8, 7))
