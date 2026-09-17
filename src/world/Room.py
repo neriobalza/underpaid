@@ -23,18 +23,35 @@ class Room:
             self.tilemap.pixel_width, self.tilemap.pixel_height,
         )
         self.walkable_area = self.bounds.inflate(-2 * size, -2 * size)
-        self.dispatch_area = pygame.Rect(
-            self.walkable_area.right - size, self.bounds.top + 5 * size,
-            size, 4 * size,
-        )
         
+        # Valores por defecto
+        self.dispatch_area = pygame.Rect(self.walkable_area.right - size, self.bounds.top + 5 * size, size, 4 * size)
+        self.unloading_area = pygame.Rect(self.bounds.x, self.bounds.y, size, size)
         self.objects = []
+        
         with open(map_path) as f:
             map_data = json.load(f)
             for layer in map_data.get("layers", []):
-                if layer.get("type") == "objectgroup" and layer.get("name") == "boxes":
-                    for obj in layer.get("objects", []):
-                        self.objects.append(Box(self.bounds.x + obj.get("x", 0), self.bounds.y + obj.get("y", 0)))
+                layer_type = layer.get("type")
+                layer_name = layer.get("name")
+                if layer_type == "objectgroup":
+                    if layer_name == "boxes":
+                        for obj in layer.get("objects", []):
+                            self.objects.append(Box(self.bounds.x + obj.get("x", 0), self.bounds.y + obj.get("y", 0)))
+                    elif layer_name == "dispatch_area":
+                        if layer.get("objects"):
+                            obj = layer["objects"][0]
+                            self.dispatch_area = pygame.Rect(
+                                self.bounds.x + obj.get("x", 0), self.bounds.y + obj.get("y", 0),
+                                obj.get("width", 0), obj.get("height", 0)
+                            )
+                    elif layer_name == "unloading_area":
+                        if layer.get("objects"):
+                            obj = layer["objects"][0]
+                            self.unloading_area = pygame.Rect(
+                                self.bounds.x + obj.get("x", 0), self.bounds.y + obj.get("y", 0),
+                                obj.get("width", 0), obj.get("height", 0)
+                            )
 
         # La sala es estática: se dibuja una vez y se reutiliza cada frame.
         self.background = pygame.Surface(self.bounds.size)
@@ -51,6 +68,7 @@ class Room:
     def render(self, surface: pygame.Surface) -> None:
         surface.blit(self.background, self.bounds)
         pygame.draw.rect(surface, settings.ACCENT_COLOR, self.dispatch_area, width=2)
+        pygame.draw.rect(surface, (128, 128, 128), self.unloading_area, width=2)
 
     def count_deliveries(self) -> int:
         """Sólo los objetos colocados por completo en despacho se entregan."""
