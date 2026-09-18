@@ -17,7 +17,7 @@ class DaySchedule:
         
         # 1. Definir los tiempos de los camiones de despacho
         self.dispatch_trucks = []
-        num_dispatch_trucks = 4
+        num_dispatch_trucks = min(4, 2 * settings.ORDERS_PER_PLAYER)
         interval = self.match_duration / (num_dispatch_trucks + 1)
         
         for i in range(num_dispatch_trucks):
@@ -132,10 +132,10 @@ class DaySchedule:
         for box in boxes_to_take:
             self.room.objects.remove(box)
             
-        delivered, incorrect = self.evaluate_delivery(boxes_to_take, self.room.active_dispatch_truck_id)
+        delivered, incorrect, missed = self.evaluate_delivery(boxes_to_take, self.room.active_dispatch_truck_id)
         
         if hasattr(self.room, "on_dispatch_depart"):
-            self.room.on_dispatch_depart(delivered, incorrect, boxes_to_take)
+            self.room.on_dispatch_depart(delivered, incorrect, missed, boxes_to_take)
             
         self.room.dispatch_truck.depart(on_finish=self._on_dispatch_departed)
         
@@ -160,4 +160,5 @@ class DaySchedule:
             else:
                 delivered[order.number] = box
                 
-        return delivered, incorrect
+        missed = [o for o in truck_orders if o.number not in delivered]
+        return delivered, incorrect, missed

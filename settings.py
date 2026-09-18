@@ -240,7 +240,7 @@ for key, action in (
     (pygame.K_RIGHT, "keyboard2_right"),
     (pygame.K_RETURN, "keyboard2_confirm"),
     (pygame.K_DELETE, "keyboard2_cancel"),
-    (pygame.K_RSHIFT, "keyboard2_orders"),
+    (pygame.K_BACKSPACE, "keyboard2_orders"),
 ):
     InputHandler.set_keyboard_action(key, action)
 

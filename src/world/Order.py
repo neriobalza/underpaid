@@ -40,11 +40,19 @@ class Order:
 
 def generate_orders(rng=None, num_trucks: int = 1) -> list[Order]:
     rng = rng or random.Random()
+    total_orders = 2 * settings.ORDERS_PER_PLAYER
+    num_trucks = min(num_trucks, total_orders)
+    
+    truck_assignments = list(range(1, num_trucks + 1))
+    while len(truck_assignments) < total_orders:
+        truck_assignments.append(rng.randint(1, num_trucks))
+    rng.shuffle(truck_assignments)
+    
     orders = []
     for owner in (1, 2):
         for _ in range(settings.ORDERS_PER_PLAYER):
             quantity = rng.randint(settings.ORDER_MIN_PRODUCTS, settings.ORDER_MAX_PRODUCTS)
             requirements = Counter(rng.randrange(len(settings.PRODUCT_NAMES)) for _ in range(quantity))
-            truck_id = rng.randint(1, num_trucks)
+            truck_id = truck_assignments.pop()
             orders.append(Order(len(orders) + 1, owner, requirements, truck_id))
     return orders

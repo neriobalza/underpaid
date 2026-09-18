@@ -55,16 +55,27 @@ class PlayState(BaseState):
         period = "AM" if hours % 24 < 12 else "PM"
         return f"{hours % 12 or 12}:{minutes:02d} {period}"
 
-    def on_dispatch_depart(self, delivered, incorrect, taken_boxes):
+    def on_dispatch_depart(self, delivered, incorrect, missed, taken_boxes):
+        import random
         self.room.delivered_orders.update(delivered)
         self.room.incorrect_boxes.extend(incorrect)
         
+        penalties = {number: 0 for number in self.players}
+        
         for box in incorrect:
             self.game.stars = max(0, self.game.stars - 0.05)
-            if box.last_carrier_number and box.last_carrier_number in self.players:
-                player = self.players[box.last_carrier_number]
-                player.salary -= 5
-                self.spawn_penalty_text(player, "-5¢")
+            if box.last_carrier_number and box.last_carrier_number in penalties:
+                penalties[box.last_carrier_number] += 5
+                
+        for order in missed:
+            random_player = random.choice(list(self.players.keys()))
+            penalties[random_player] += 5
+            
+        for number, amount in penalties.items():
+            if amount > 0:
+                player = self.players[number]
+                player.salary -= amount
+                self.spawn_penalty_text(player, f"-{amount}¢")
 
     def spawn_penalty_text(self, player, text):
         import types
