@@ -177,7 +177,8 @@ locales `projects/01-pong` a `projects/08-throw_a_bird`, especialmente `06-princ
 
 ## Objetos levantables
 
-La sala comienza con dos cajas grandes, una mediana y una pequeña (`src/world/Box.py`).
+La sala comienza sin cajas; no se generan al iniciar ni al pasar a otra jornada.
+Los tres tipos siguen disponibles en `src/world/Box.py` para futuras mecánicas de recepción y pedidos.
 Cada tipo usa su propio sprite de `assets/graphics/`, escalado sin suavizado para conservar el pixel art.
 
 | Tipo (`box_type`) | Tamaño | Sprite | Uso |

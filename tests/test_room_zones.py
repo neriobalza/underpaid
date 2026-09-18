@@ -17,9 +17,12 @@ class RoomZonesTest(unittest.TestCase):
         self.assertNotEqual(room.dispatch_area.topleft, (0, 0))
         self.assertNotEqual(room.unloading_area.topleft, (0, 0))
         
-        # Hay dos cajas de recepción y dos cajas de pedidos.
-        self.assertEqual(len(room.objects), 4)
-        orders = [box for box in room.objects if box.is_order]
+        # Las jornadas comienzan sin cajas generadas automáticamente.
+        self.assertEqual(room.objects, [])
+        self.assertEqual(room.order_count, 0)
+        self.assertEqual(room.count_deliveries(), 0)
+        orders = [Box(96, 128, 'medium'), Box(512, 352, 'small')]
+        room.objects.extend(orders)
         self.assertEqual(len(orders), 2)
         
         # Verificar que las cajas iniciales NO están en la zona de carga (dispatch)

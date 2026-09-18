@@ -1,14 +1,12 @@
 """Sala de suelo y paredes basada en el mapa de 06-princess."""
 
 import math
-import random
 
 import pygame
 import json
 from gale.tilemap import CollisionType, collision_type_at, load_tiled_map
 
 import settings
-from src.world.Box import Box
 from src.world.Shelf import Shelf
 
 
@@ -55,16 +53,6 @@ class Room:
             Shelf(self.bounds.x + obj.x, self.bounds.y + obj.y,
                   obj.properties.get("type", 0), obj.width, obj.height)
             for obj in self.tilemap.object_layers.get("shelfs", [])
-        ]
-
-        # Spawneamos las cajas como estaban en la rama main
-        self.objects = [
-            Box(self.bounds.x + col * size, self.bounds.y + row * size, box_type)
-            for col, row, box_type in (
-                (3, 3, "large"), (3, self.tilemap.rows - 4, "large"),
-                (self.tilemap.cols - 4, 3, "medium"),
-                (self.tilemap.cols - 4, self.tilemap.rows - 4, "small"),
-            )
         ]
 
         # La sala es estática: se dibuja una vez y se reutiliza cada frame.

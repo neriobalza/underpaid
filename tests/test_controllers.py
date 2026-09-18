@@ -84,7 +84,21 @@ class ControllerTests(unittest.TestCase):
         self.button(71)
         self.assertIsInstance(self.game.state_machine.current, PlayState)
         self.dismiss_dialog()
+        self.add_test_boxes()
         return self.game.state_machine.current
+
+    def add_test_boxes(self):
+        # Objetos de prueba explícitos; las jornadas reales comienzan sin cajas.
+        room = self.game.state_machine.current.room
+        size = settings.TILE_RENDER_SIZE
+        room.objects = [
+            Box(room.bounds.x + col * size, room.bounds.y + row * size, box_type)
+            for col, row, box_type in (
+                (3, 3, 'large'), (3, room.tilemap.rows - 4, 'large'),
+                (room.tilemap.cols - 4, 3, 'medium'),
+                (room.tilemap.cols - 4, room.tilemap.rows - 4, 'small'),
+            )
+        ]
 
     def dismiss_dialog(self):
         state = self.game.state_machine.current
@@ -113,6 +127,7 @@ class ControllerTests(unittest.TestCase):
         self.button(203)
         self.assertIsInstance(self.game.state_machine.current, PlayState)
         self.dismiss_dialog()
+        self.add_test_boxes()
         return self.game.state_machine.current
 
     def test_join_requires_a_on_selection_and_ignores_releases(self):
@@ -1357,6 +1372,7 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(self.game.day, 2)
         self.assertEqual(self.game.delivered, 2)
         self.assertEqual(self.game.state_machine.current.clock_text, '8:00 AM')
+        self.assertEqual(self.game.state_machine.current.room.objects, [])
 
     def test_five_incomplete_days_end_game_and_new_game_resets_score(self):
         self.play()
@@ -1368,6 +1384,7 @@ class ControllerTests(unittest.TestCase):
             self.assertEqual(self.game.stars, settings.MAX_STARS - day)
             if self.game.stars:
                 result.next_day()
+                self.add_test_boxes()
         result.next_day()
         self.assertIs(self.game.state_machine.current, result)
         self.game._Game__render()
