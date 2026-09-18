@@ -12,7 +12,7 @@ from src.world.Table import Table
 from src.world.Box import Box
 from src.world.BoxDispenser import BoxDispenser
 from src.world.Order import generate_orders
-
+from src.world.Truck import Truck
 
 class Room:
     def __init__(self) -> None:
@@ -31,6 +31,8 @@ class Room:
         self.unloading_area = pygame.Rect(self.bounds.x, self.bounds.y, size, size)
         self.objects = []
         self.orders = []
+        self.incoming_truck = None
+        self.outcoming_truck = None
         
         with open(map_path) as f:
             map_data = json.load(f)
@@ -51,6 +53,22 @@ class Room:
                             self.unloading_area = pygame.Rect(
                                 self.bounds.x + obj.get("x", 0), self.bounds.y + obj.get("y", 0),
                                 obj.get("width", 0), obj.get("height", 0)
+                            )
+                    elif layer_name == "incoming_truck":
+                        if layer.get("objects"):
+                            obj = layer["objects"][0]
+                            tile_val = next((p["value"] for p in obj.get("properties", []) if p["name"] == "tile"), 1)
+                            self.incoming_truck = Truck(
+                                self.bounds.x + obj.get("x", 0), self.bounds.y + obj.get("y", 0),
+                                obj.get("width", 0), obj.get("height", 0), tile_val
+                            )
+                    elif layer_name == "outcoming_truck":
+                        if layer.get("objects"):
+                            obj = layer["objects"][0]
+                            tile_val = next((p["value"] for p in obj.get("properties", []) if p["name"] == "tile"), 1)
+                            self.outcoming_truck = Truck(
+                                self.bounds.x + obj.get("x", 0), self.bounds.y + obj.get("y", 0),
+                                obj.get("width", 0), obj.get("height", 0), tile_val
                             )
 
         # Gale carga las posiciones y el tipo asignado desde la zona de repisas.
@@ -123,6 +141,10 @@ class Room:
 
     def render(self, surface: pygame.Surface) -> None:
         surface.blit(self.background, self.bounds)
+        if self.incoming_truck:
+            self.incoming_truck.render(surface)
+        if self.outcoming_truck:
+            self.outcoming_truck.render(surface)
         pygame.draw.rect(surface, settings.ACCENT_COLOR, self.dispatch_area, width=2)
         pygame.draw.rect(surface, (128, 128, 128), self.unloading_area, width=2)
 
