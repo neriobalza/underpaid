@@ -58,7 +58,7 @@ class Underpaid(Game):
         self.stars = settings.MAX_STARS
         self.delivered = 0
         self.score = 0
-        self.day = 1
+        self.day = 0
 
     def start_game(self) -> None:
         self.reset_score()

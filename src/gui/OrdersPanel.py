@@ -48,8 +48,18 @@ class OrdersPanel:
         
         for order in room.orders:
             done = order.number in delivered
-            status = "ENTREGADO" if done else "PENDIENTE"
-            color = settings.PLACEMENT_VALID_COLOR if done else settings.TEXT_COLOR
+            is_missed = hasattr(room, "missed_orders") and order.number in room.missed_orders
+            
+            if done:
+                status = "ENTREGADO"
+                color = settings.PLACEMENT_VALID_COLOR
+            elif is_missed:
+                status = "NO ENTREGADO"
+                color = settings.PLACEMENT_INVALID_COLOR
+            else:
+                status = "PENDIENTE"
+                color = settings.TEXT_COLOR
+                
             x_offset = rect.x + 12 + (col * 290)
             
             surface.blit(self.font.render(f"Pedido #{order.number} (Camión {order.truck_id}) · {status}", True, color), (x_offset, y))

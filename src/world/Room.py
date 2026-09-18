@@ -16,12 +16,13 @@ from src.world.Truck import Truck
 from src.world.DaySchedule import DaySchedule
 
 class Room:
-    def __init__(self) -> None:
+    def __init__(self, day: int) -> None:
         self.delivered_orders = {}
         self.incorrect_boxes = []
+        self.missed_orders = set()
         size = settings.TILE_RENDER_SIZE
         
-        map_path = settings.BASE_DIR / "assets" / "tilemaps" / "day1.json"
+        map_path = settings.BASE_DIR / "assets" / "tilemaps" / f"day{day}.json"
         self.tilemap = load_tiled_map(str(map_path))
         
         self.bounds = pygame.Rect(
@@ -121,7 +122,7 @@ class Room:
     def obstacles(self) -> list:
         return [obj for obj in self.objects if obj.table is None] + self.shelves + self.tables + self.dispensers
 
-    def start_day(self, rng=None) -> None:
+    def start_day(self, day: int, play_state, rng=None) -> None:
         if len({shelf.product_type for shelf in self.shelves}) != len(settings.PRODUCT_NAMES):
             raise ValueError("El almacén requiere una repisa para cada uno de los cinco productos")
         if not self.tables or {station.box_type for station in self.dispensers} != {"small", "medium"}:
@@ -129,7 +130,14 @@ class Room:
             
         self.delivered_orders = {}
         self.incorrect_boxes = []
-        self.strategy = DaySchedule(self, rng)
+        self.missed_orders = set()
+        
+        if day == 0:
+            from src.world.TutorialSchedule import TutorialSchedule
+            self.strategy = TutorialSchedule(self, play_state)
+        else:
+            self.strategy = DaySchedule(self, rng)
+            
         self.on_dispatch_depart = None
 
     def update(self, dt: float) -> None:

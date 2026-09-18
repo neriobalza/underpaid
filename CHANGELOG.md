@@ -9,6 +9,14 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Added
 
+- **Nivel Tutorial (Día 0):** Implementación completa mediante patrón Strategy (`TutorialSchedule`), un nivel interactivo impulsado por diálogos y condiciones secuenciales sin reloj de partida, enseñando a moverse, descargar ítems de cajas grandes al estante, empaquetar órdenes exactas en mesas y despacharlas.
+- Cajas de prueba para el Tutorial con posiciones, tamaños y productos fijos asegurando el recorrido guiado.
+- Sistema unificado de deducción de salario: se restan y acumulan 5¢ en animaciones flotantes ("-5¢") sobre el responsable por cada pedido enviado erróneamente, o sobre un jugador al azar si un pedido se escapa en el camión sin ser entregado.
+- Panel de pedidos (`OrdersPanel`) destaca con etiqueta roja "NO ENTREGADO" los pedidos perdidos.
+- Teclas mapeadas: Q para Teclado 1, Retroceso para Teclado 2.
+- Desconexión en vivo del mando: cualquier desconexión reinicia la selección de personajes informando a los jugadores "Mando desconectado. Partida reiniciada."
+- Test unitarios dedicados a asegurar la robustez de la máquina de estados del tutorial (`test_tutorial.py`).
+
 - Soporte para dos jugadores de teclado de forma simultánea e independiente (Teclado 1: WASD+Espacio+Esc, Teclado 2: Flechas+Enter+Supr), conservando compatibilidad completa con mandos conectados.
 - Refactorización de la lógica de movimiento en `Player` y `commands` para depender exclusivamente de eventos lógicos de Gale, eliminando diccionarios de conversión redundantes y acoplamiento con constantes puras de Pygame.
 - Interceptación y traducción condicional global de los prefijos de entrada en `Underpaid.py` y `PlayState.py` para abstraer correctamente los dispositivos de cada jugador.

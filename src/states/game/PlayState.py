@@ -23,8 +23,8 @@ class PlayState(BaseState):
             player.number != number for number, player in self.players.items()
         ) or len({player.input_source for player in self.players.values()}) != 2:
             raise ValueError("La partida requiere dos personajes con entradas diferentes")
-        self.room = Room()
-        self.room.start_day()
+        self.room = Room(self.game.day)
+        self.room.start_day(self.game.day, self)
         self.room.on_dispatch_depart = self.on_dispatch_depart
         self.show_orders_panel = False
         self.orders_held = set()
@@ -33,21 +33,25 @@ class PlayState(BaseState):
             player.stop()
             player.position.update(self.room.spawn_position(player.number))
         self.game_minutes = float(settings.CLOCK_START_HOUR * 60)
-        # Gale actualiza Timer una vez por frame en su bucle de juego.
-        self.match_clock = Timer.tween(
-            settings.MATCH_DURATION,
-            [(self, {"game_minutes": float(settings.CLOCK_END_HOUR * 60)})],
-            on_finish=self._finish_match,
-        )
         
-        portrait_frames = settings.load_boss_frames()
-        
-        self.active_dialog = FloatingDialog(
-            text="Q / X: consulta tus pedidos.\nDescarga las cajas en repisas.\nEmpaca y entrega en amarillo.",
-            font=self.game.fonts["medium"],
-            portrait_frames=portrait_frames,
-            sound=settings.load_dialog_sound("boss")
-        )
+        if self.game.day > 0:
+            # Gale actualiza Timer una vez por frame en su bucle de juego.
+            self.match_clock = Timer.tween(
+                settings.MATCH_DURATION,
+                [(self, {"game_minutes": float(settings.CLOCK_END_HOUR * 60)})],
+                on_finish=self._finish_match,
+            )
+            
+            portrait_frames = settings.load_boss_frames()
+            self.active_dialog = FloatingDialog(
+                text="Q / X: consulta tus pedidos.\nDescarga las cajas en repisas.\nEmpaca y entrega en amarillo.",
+                font=self.game.fonts["medium"],
+                portrait_frames=portrait_frames,
+                sound=settings.load_dialog_sound("boss")
+            )
+        else:
+            self.match_clock = None
+            self.active_dialog = None
 
     @property
     def clock_text(self) -> str:
@@ -59,6 +63,7 @@ class PlayState(BaseState):
         import random
         self.room.delivered_orders.update(delivered)
         self.room.incorrect_boxes.extend(incorrect)
+        self.room.missed_orders.update(o.number for o in missed)
         
         penalties = {number: 0 for number in self.players}
         
@@ -123,7 +128,7 @@ class PlayState(BaseState):
             self._finish_match()
 
     def exit(self) -> None:
-        if hasattr(self, "match_clock"):
+        if getattr(self, "match_clock", None) is not None:
             self.match_clock.remove()
         for player in getattr(self, "players", {}).values():
             player.stop()
@@ -178,20 +183,31 @@ class PlayState(BaseState):
             entity.render(surface)
         self.room.render_placement(surface, self.players.values())
         for player in self.players.values():
-            hint = self.room.interaction_hint(player)
-            if hint and not self.show_orders_panel:
-                key = "Enter" if player.uses_keyboard else "A"
-                lines = [f"{key}: {hint}"]
-                action, target = self.room.next_action(player)
-                if action == "unload":
-                    quantity = player.carrying.contents[target.product_type]
-                    lines.append(f"1 unidad por pulsación · En la caja: {quantity}")
-                box = player.carrying if player.carrying is not None and player.carrying.is_order else None
-                if action in ("pack", "take_table_box", "box_full"):
-                    box = target.box
-                if box is not None and box.quantity:
-                    lines += [f"{settings.PRODUCT_NAMES[product_type]} × {quantity}"
-                              for product_type, quantity in sorted(box.contents.items())]
+            custom_hint = None
+            if hasattr(self.room.strategy, "custom_hints"):
+                custom_hint = self.room.strategy.custom_hints.get(player.number)
+            
+            lines = []
+            action = ""
+            if custom_hint and not self.show_orders_panel:
+                lines = [custom_hint]
+            elif self.game.day > 0:
+                hint = self.room.interaction_hint(player)
+                if hint and not self.show_orders_panel:
+                    key = "Enter" if player.uses_keyboard else "A"
+                    lines = [f"{key}: {hint}"]
+                    action, target = self.room.next_action(player)
+                    if action == "unload":
+                        quantity = player.carrying.contents[target.product_type]
+                        lines.append(f"1 unidad por pulsación · En la caja: {quantity}")
+                    box = player.carrying if player.carrying is not None and player.carrying.is_order else None
+                    if action in ("pack", "take_table_box", "box_full"):
+                        box = target.box
+                    if box is not None and box.quantity:
+                        lines += [f"{settings.PRODUCT_NAMES[product_type]} × {quantity}"
+                                  for product_type, quantity in sorted(box.contents.items())]
+
+            if lines:
                 images = [self.game.fonts["small"].render(
                     line, True, settings.ACCENT_COLOR if action == "unload" and index == 0 else settings.TEXT_COLOR,
                 ) for index, line in enumerate(lines)]
