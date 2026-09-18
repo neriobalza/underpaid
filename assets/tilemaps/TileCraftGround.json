@@ -1,0 +1,15 @@
+{ "columns":9,
+ "image":"..\/graphics\/TileCraftGround.png",
+ "imageheight":288,
+ "imagewidth":288,
+ "margin":0,
+ "name":"TileCraftGround",
+ "spacing":0,
+ "tilecount":81,
+ "tiledversion":"1.12.2",
+ "tileheight":32,
+ "tilewidth":32,
+ "transparentcolor":"#ff00ff",
+ "type":"tileset",
+ "version":"1.10"
+}

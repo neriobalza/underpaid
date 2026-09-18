@@ -170,6 +170,33 @@
                  "type":"string",
                  "value":"solid"
                 }]
+        }, 
+        {
+         "id":69,
+         "properties":[
+                {
+                 "name":"collision",
+                 "type":"string",
+                 "value":"solid"
+                }]
+        }, 
+        {
+         "id":70,
+         "properties":[
+                {
+                 "name":"collision",
+                 "type":"string",
+                 "value":"solid"
+                }]
+        }, 
+        {
+         "id":71,
+         "properties":[
+                {
+                 "name":"collision",
+                 "type":"string",
+                 "value":"solid"
+                }]
         }],
  "tilewidth":32,
  "transparentcolor":"#ff00ff",
