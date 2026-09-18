@@ -9,9 +9,20 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Added
 
+- Pedidos procedurales de dos a cinco productos para cada jugador, con listas
+  personales que se consultan con Q en teclado o X en mando.
+- Cinco productos identificables: camisas, audífonos, pantalones, teléfonos y zapatos.
+- Llegada de cajas grandes a las 8 AM con los productos necesarios para todos
+  los pedidos, descarga por unidad a sus repisas y eliminación de cajas vacías.
+- Cajas pequeñas y medianas como contenedores, puestos para obtener cajas
+  vacías y empaquetado por unidad en las mesas de trabajo.
+- Transporte de un único producto en mano y devolución a las repisas de todos
+  los artículos de un tipo para corregir el contenido de una caja.
+- Fin anticipado de la jornada al entregar todos los pedidos y descuento de
+  puntos al finalizar por paquetes incorrectos o duplicados.
 - Mesas de trabajo de 64 píxeles de ancho por 32 de alto con el sprite completo
   `table.png`, una por cada pareja de espacios de la capa `table` del mapa,
-  con colisiones y bloqueo de la colocación de cajas.
+  con colisiones y una superficie para preparar pedidos.
 - Pausa con `Esc` o Start del mando mediante una pila de estados de Gale,
   con panel semitransparente y botones para continuar o volver al menú principal.
 - Reloj, personajes y diálogos detenidos durante la pausa, conservando la
@@ -23,8 +34,22 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Removed
 
-- Generación automática de cajas al iniciar cada jornada; el almacén comienza
-  sin cajas y conserva las repisas definidas por el mapa.
+- Generación de cajas sueltas sin contenido al iniciar cada jornada; ahora
+  sólo llegan cajas de abastecimiento con productos para los pedidos.
+
+### Changed
+
+- Las entregas requieren el tamaño de caja y las cantidades exactas de cada
+  producto: un pedido correcto suma 100 puntos y un paquete incorrecto resta 50.
+- Las cajas pequeñas admiten hasta tres productos y las medianas hasta cinco.
+  Consultar pedidos mantiene el reloj corriendo; la pausa sigue deteniéndolo.
+
+### Fixed
+
+- Repisas superpuestas y asignadas al mismo producto en el mapa: ahora los
+  cinco productos tienen su propio espacio de almacenamiento.
+- Aparición de personajes en posiciones ocupadas por muebles o cajas.
+- Pruebas de colisiones y entregas adaptadas al suelo actual y a los paquetes con contenido.
 
 ## [0.2.0] - 2026-09-17
 

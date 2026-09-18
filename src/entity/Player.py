@@ -35,6 +35,7 @@ class Player:
             for direction, frames in settings.load_player_frames("player_pot_walk.png").items()
         }
         self.carrying = None
+        self.held_product = None
         self.lift_elapsed = 0.0
         self.lift_start = pygame.Vector2()
         self.interact_held = False
@@ -80,8 +81,11 @@ class Player:
         self.stop()
 
     def lift(self, obj) -> None:
-        if self.carrying is not None or not obj.solid:
+        if self.carrying is not None or self.held_product is not None or not obj.solid:
             raise ValueError("El objeto o el jugador ya están ocupados")
+        if obj.table is not None:
+            obj.table.box = None
+            obj.table = None
         obj.carrier = self
         self.carrying = obj
         self.lift_elapsed = 0.0
@@ -104,6 +108,7 @@ class Player:
             self.put_down(self.carrying.floor_position)
         self.interact_held = False
         self.interact_requested = False
+        self.held_product = None
 
     def _update_carried_object(self, dt: float) -> None:
         if self.carrying is None:
@@ -239,3 +244,5 @@ class Player:
         surface.blit(frame, rect)
         if self.carrying is not None:
             self.carrying.render(surface)
+        if self.held_product is not None:
+            surface.blit(self.held_product.image, (round(self.position.x) - 16, round(self.position.y) - 56))

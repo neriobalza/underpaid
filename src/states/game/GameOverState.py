@@ -11,10 +11,12 @@ class GameOverState(BaseState):
         super().__init__(state_machine)
         self.game = game
 
-    def enter(self, players, delivered: int, total: int) -> None:
+    def enter(self, players, delivered: int, total: int, incorrect: int = 0, points: int = 0) -> None:
         self.players = dict(players)
         self.delivered = delivered
         self.total = total
+        self.incorrect = incorrect
+        self.points = points
         items = []
         if self.game.stars > 0:
             items.append(("Siguiente jornada", self.next_day))
@@ -46,8 +48,10 @@ class GameOverState(BaseState):
         draw_text(surface, title, self.game.fonts["large"], 90, settings.ACCENT_COLOR)
         draw_text(surface, f"Día {self.game.day} · Entregados: {self.delivered}/{self.total}",
                   self.game.fonts["medium"], 160)
-        draw_text(surface, f"Estrellas: {self.game.stars}/{settings.MAX_STARS} · Total: {self.game.delivered}",
+        draw_text(surface, f"Estrellas: {self.game.stars}/{settings.MAX_STARS} · Puntos: {self.game.score}",
                   self.game.fonts["medium"], 200)
         message = "No quedan estrellas." if self.game.stars == 0 else "Cada jornada incompleta pierde una estrella."
-        draw_text(surface, message, self.game.fonts["small"], 245, settings.MUTED_COLOR)
+        draw_text(surface, f"Incorrectos: {self.incorrect} · Puntos de la jornada: {self.points:+d}",
+                  self.game.fonts["small"], 240, settings.TEXT_COLOR)
+        draw_text(surface, message, self.game.fonts["small"], 270, settings.MUTED_COLOR)
         self.menu.render(surface)

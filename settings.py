@@ -100,6 +100,22 @@ BOX_SPEED_MULTIPLIERS = {
     "small": 1,
 }
 POT_LIFT_DURATION = 0.3
+PRODUCT_NAMES = ("Camisa", "Audífonos", "Pantalones", "Teléfono", "Zapatos")
+BOX_CAPACITIES = {"large": None, "medium": 5, "small": 3}
+ORDERS_PER_PLAYER = 2
+ORDER_MIN_PRODUCTS = 2
+ORDER_MAX_PRODUCTS = 5
+POINTS_PER_ORDER = 100
+INCORRECT_ORDER_PENALTY = 50
+
+
+@lru_cache(maxsize=1)
+def load_product_frames() -> tuple[pygame.Surface, ...]:
+    sheet = pygame.image.load(BASE_DIR / "assets" / "graphics" / "products.png").convert_alpha()
+    frames = generate_frames(sheet, 32, 32)
+    if len(frames) != len(PRODUCT_NAMES):
+        raise ValueError("El spritesheet de productos requiere cinco sprites de 32 × 32")
+    return tuple(sheet.subsurface(rect).copy() for rect in frames)
 
 
 @lru_cache(maxsize=3)
@@ -218,6 +234,7 @@ for key, action in (
     (pygame.K_RETURN, "confirm"),
     (pygame.K_SPACE, "confirm"),
     (pygame.K_ESCAPE, "back"),
+    (pygame.K_q, "keyboard_orders"),
     (pygame.K_DELETE, "cancel"),
     (pygame.K_BACKSPACE, "cancel"),
 ):
@@ -231,6 +248,7 @@ for button, action in (
     (pygame.CONTROLLER_BUTTON_A, "pad_a"),
     (pygame.CONTROLLER_BUTTON_B, "pad_b"),
     (pygame.CONTROLLER_BUTTON_START, "pad_pause"),
+    (pygame.CONTROLLER_BUTTON_X, "pad_orders"),
     (pygame.CONTROLLER_BUTTON_DPAD_UP, "pad_up"),
     (pygame.CONTROLLER_BUTTON_DPAD_DOWN, "pad_down"),
     (pygame.CONTROLLER_BUTTON_DPAD_LEFT, "pad_left"),

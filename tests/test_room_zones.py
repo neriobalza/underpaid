@@ -2,6 +2,7 @@ import unittest
 import pygame
 from src.world.Room import Room
 from src.world.Box import Box
+from src.world.Order import Order
 
 class RoomZonesTest(unittest.TestCase):
     def test_room_loads_zones_from_tiled(self):
@@ -21,7 +22,8 @@ class RoomZonesTest(unittest.TestCase):
         self.assertEqual(room.objects, [])
         self.assertEqual(room.order_count, 0)
         self.assertEqual(room.count_deliveries(), 0)
-        orders = [Box(96, 128, 'medium'), Box(512, 352, 'small')]
+        room.orders = [Order(1, 1, {0: 4}), Order(2, 2, {1: 2})]
+        orders = [Box(96, 128, 'medium', {0: 4}), Box(512, 352, 'small', {1: 2})]
         room.objects.extend(orders)
         self.assertEqual(len(orders), 2)
         

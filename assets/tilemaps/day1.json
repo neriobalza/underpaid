@@ -974,7 +974,7 @@
                                           {
                                                  "name": "type",
                                                  "type": "int",
-                                                 "value": 0
+                                                 "value": 1
                                           }
                                    ],
                                    "rotation": 0,
@@ -993,7 +993,7 @@
                                           {
                                                  "name": "type",
                                                  "type": "int",
-                                                 "value": 0
+                                                 "value": 2
                                           }
                                    ],
                                    "rotation": 0,
@@ -1012,14 +1012,14 @@
                                           {
                                                  "name": "type",
                                                  "type": "int",
-                                                 "value": 0
+                                                 "value": 3
                                           }
                                    ],
                                    "rotation": 0,
                                    "type": "",
                                    "visible": true,
                                    "width": 64,
-                                   "x": 384,
+                                   "x": 448,
                                    "y": 64
                             },
                             {
@@ -1031,7 +1031,7 @@
                                           {
                                                  "name": "type",
                                                  "type": "int",
-                                                 "value": 0
+                                                 "value": 4
                                           }
                                    ],
                                    "rotation": 0,

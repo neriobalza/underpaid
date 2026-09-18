@@ -12,6 +12,7 @@ os.environ.setdefault("SDL_RENDER_DRIVER", "software")
 import pygame
 from gale.input_handler import InputHandler
 from gale.timer import Timer
+from gale.tilemap import CollisionType, collision_type_at
 
 from src.Underpaid import Underpaid
 from src.states.game.PlayerSelectState import PlayerSelectState
@@ -19,6 +20,8 @@ from src.states.game.PlayState import PlayState
 from src.states.game.GameOverState import GameOverState
 from src.entity.Player import Player
 from src.world.Box import Box
+from src.world.Order import Order
+from src.world.Product import Product
 import settings
 
 
@@ -88,9 +91,11 @@ class ControllerTests(unittest.TestCase):
         return self.game.state_machine.current
 
     def add_test_boxes(self):
-        # Objetos de prueba explícitos; las jornadas reales comienzan sin cajas.
+        # Aislar movimientos y entregas de la generación procedural y los puestos.
         room = self.game.state_machine.current.room
         size = settings.TILE_RENDER_SIZE
+        room.dispensers = []
+        room.orders = [Order(1, 1, {0: 4}), Order(2, 2, {1: 2})]
         room.objects = [
             Box(room.bounds.x + col * size, room.bounds.y + row * size, box_type)
             for col, row, box_type in (
@@ -99,6 +104,16 @@ class ControllerTests(unittest.TestCase):
                 (room.tilemap.cols - 4, room.tilemap.rows - 4, 'small'),
             )
         ]
+        room.objects[2].add(Product(0), 4)
+        room.objects[3].add(Product(1), 2)
+
+    def floor_bounds(self, room):
+        size = settings.TILE_RENDER_SIZE
+        cells = [pygame.Rect(x, y, size, size)
+                 for y in range(room.bounds.top, room.bounds.bottom, size)
+                 for x in range(room.bounds.left, room.bounds.right, size)
+                 if room.floor_contains(pygame.Rect(x, y, size, size))]
+        return cells[0].unionall(cells)
 
     def dismiss_dialog(self):
         state = self.game.state_machine.current
@@ -255,20 +270,16 @@ class ControllerTests(unittest.TestCase):
 
     def test_players_reach_edge_floor_tiles_and_overlap_upper_wall(self):
         state = self.play()
-        bounds = state.room.walkable_area
-        # El mapa de Tiled tiene dos filas de pared en la parte superior.
-        bounds = bounds.copy()
-        bounds.top += settings.TILE_RENDER_SIZE
-        bounds.height -= settings.TILE_RENDER_SIZE
+        bounds = self.floor_bounds(state.room)
         top_wall = pygame.Rect(state.room.bounds.left, state.room.bounds.top,
-                               state.room.bounds.width, 2 * settings.TILE_RENDER_SIZE)
+                               state.room.bounds.width, bounds.top - state.room.bounds.top)
         for player in state.players.values():
             other = next(other for other in state.players.values() if other is not player)
-            other.position.update(80, 128)
+            other.position.update(480, 192)
             for dx, dy, edge in ((-1, 0, 'left'), (1, 0, 'right'),
                                  (0, 1, 'bottom'), (0, -1, 'top')):
-                # La repisa de la pared izquierda ocupa el pasillo a Y = 240.
-                player.position.update(272, 320)
+                # Elegir corredores libres de cajas, repisas y mesas.
+                player.position.update(288 if dy < 0 else 176, 320)
                 self.axis(player.controller_id, dx)
                 self.axis(player.controller_id, dy, pygame.CONTROLLER_AXIS_LEFTY)
                 self.game.update(100)
@@ -285,10 +296,9 @@ class ControllerTests(unittest.TestCase):
     def test_keyboard_player_can_reach_first_and_last_floor_rows(self):
         state = self.keyboard_play()
         player = state.players[1]
-        bounds = state.room.walkable_area
-        bounds = bounds.copy()
-        bounds.top += settings.TILE_RENDER_SIZE
-        bounds.height -= settings.TILE_RENDER_SIZE
+        bounds = self.floor_bounds(state.room)
+        state.room.objects = []
+        player.position.update(160, 224)
         self.key(pygame.K_w)
         self.game.update(100)
         self.assertEqual(player.hitbox.top, bounds.top)
@@ -749,7 +759,7 @@ class ControllerTests(unittest.TestCase):
             with self.subTest(blocker=blocker):
                 state.room.objects = []
                 if blocker == 'wall':
-                    second.position.update(592, 224)
+                    second.position.update(self.floor_bounds(state.room).right - settings.PLAYER_COLLISION_WIDTH / 2, 224)
                 else:
                     state.room.objects = [Box(352, 224)]
                     second.position.update(336, 224)
@@ -760,7 +770,7 @@ class ControllerTests(unittest.TestCase):
                 self.assertEqual(first.hitbox.right, second.hitbox.left)
                 self.assertFalse(first.hitbox.colliderect(second.hitbox))
                 if blocker == 'wall':
-                    self.assertEqual(second.hitbox.right, state.room.walkable_area.right)
+                    self.assertEqual(second.hitbox.right, self.floor_bounds(state.room).right)
                 else:
                     self.assertEqual(second.hitbox.right, state.room.objects[0].hitbox.left)
 
@@ -769,10 +779,10 @@ class ControllerTests(unittest.TestCase):
         state.room.objects = []
         shelf = state.room.shelves[0]
         player = state.players[1]
-        player.position.update(shelf.hitbox.right + 80, shelf.hitbox.top)
-        self.axis(player.controller_id, -1)
+        player.position.update(shelf.hitbox.centerx, shelf.hitbox.bottom + 80)
+        self.axis(player.controller_id, -1, pygame.CONTROLLER_AXIS_LEFTY)
         self.game.update(1)
-        self.assertEqual(player.hitbox.left, shelf.hitbox.right)
+        self.assertEqual(player.hitbox.top, shelf.hitbox.bottom)
         self.assertFalse(player.hitbox.colliderect(shelf.hitbox))
         self.assertFalse(state.room.try_lift(player))
         self.assertIsNone(player.carrying)
@@ -852,12 +862,12 @@ class ControllerTests(unittest.TestCase):
     def test_boxes_can_be_placed_on_floor_touching_top_wall(self):
         state = self.play()
         player = state.players[1]
-        floor_top = state.room.bounds.top + 64
+        floor_top = self.floor_bounds(state.room).top
         for box_type in ('large', 'medium', 'small'):
             with self.subTest(box_type=box_type):
                 box = Box(64, 160, box_type)
                 state.room.objects = [box]
-                player.position.update(272, floor_top + box.height)
+                player.position.update(288, floor_top + box.height)
                 player.facing = 'up'
                 player.lift(box)
                 player.lift_elapsed = settings.POT_LIFT_DURATION
@@ -870,7 +880,10 @@ class ControllerTests(unittest.TestCase):
         state = self.play()
         player = state.players[1]
         # Usar un tile sólido del mapa para simular una pared interior.
-        wall_gid = state.room.tilemap.get_gid('walls', 2, 0)
+        wall_gid = next(state.room.tilemap.get_gid('walls', row, col)
+                        for row in range(state.room.tilemap.rows)
+                        for col in range(state.room.tilemap.cols)
+                        if collision_type_at(state.room.tilemap, 'walls', row, col) == CollisionType.SOLID)
         walls = state.room.tilemap.get_layer('walls')
         for box_type, target, wall_cell in (
             ('large', pygame.Rect(256, 224, 64, 64), (7, 9)),
@@ -1372,7 +1385,9 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(self.game.day, 2)
         self.assertEqual(self.game.delivered, 2)
         self.assertEqual(self.game.state_machine.current.clock_text, '8:00 AM')
-        self.assertEqual(self.game.state_machine.current.room.objects, [])
+        supplies = self.game.state_machine.current.room.objects
+        self.assertEqual(len(supplies), 2 * settings.ORDERS_PER_PLAYER)
+        self.assertTrue(all(box.box_type == 'large' and box.quantity > 0 for box in supplies))
 
     def test_five_incomplete_days_end_game_and_new_game_resets_score(self):
         self.play()

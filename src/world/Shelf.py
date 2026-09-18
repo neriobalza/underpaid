@@ -9,13 +9,14 @@ from src.world.Product import Product
 class Shelf:
     def __init__(self, x: float, y: float, product_type: int,
                  width: int = 32, height: int = 64) -> None:
-        if type(product_type) is not int or product_type < 0:
-            raise ValueError("La repisa requiere un tipo de producto válido")
+        Product(product_type)
         if width <= 0 or height <= 0 or int(width) != width or int(height) != height:
             raise ValueError("Las dimensiones de la repisa deben ser píxeles enteros positivos")
         self.position = pygame.Vector2(x, y)
         self.width, self.height = int(width), int(height)
         self.product_type = product_type
+        self.label_font = pygame.font.Font(None, 14)
+        self.product_icon = pygame.transform.scale(Product(product_type).image, (16, 16))
         self._product: Product | None = None
         self._quantity = 0
         self.frames = tuple(
@@ -68,3 +69,9 @@ class Shelf:
 
     def render(self, surface) -> None:
         surface.blit(self.image, (round(self.position.x), round(self.position.y)))
+        surface.blit(self.product_icon, (self.hitbox.centerx - 8, self.hitbox.top - 20))
+        label = self.label_font.render(f"{settings.PRODUCT_NAMES[self.product_type]}: {self.quantity}",
+                                      True, settings.TEXT_COLOR)
+        rect = label.get_rect(midtop=(self.hitbox.centerx, self.hitbox.bottom + 2))
+        pygame.draw.rect(surface, settings.PANEL_COLOR, rect.inflate(4, 2), border_radius=2)
+        surface.blit(label, rect)

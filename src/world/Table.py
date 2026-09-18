@@ -12,6 +12,7 @@ class Table:
         self.position = pygame.Vector2(x, y)
         self.width, self.height = int(width), int(height)
         self.image = pygame.transform.scale(settings.load_table_sprite(), (self.width, self.height))
+        self.box = None
 
     @property
     def solid(self) -> bool:
@@ -23,3 +24,5 @@ class Table:
 
     def render(self, surface) -> None:
         surface.blit(self.image, (round(self.position.x), round(self.position.y)))
+        if self.box is not None:
+            self.box.render(surface)

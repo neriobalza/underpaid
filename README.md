@@ -1,7 +1,7 @@
 # Underpaid
 
-Base de videojuego con Gale y Pygame: menú principal, configuración de
-pantalla, selección de dos jugadores con mandos o mando y teclado, y movimiento independiente.
+Videojuego cooperativo de almacén con Gale y Pygame: dos jugadores reciben
+productos, abastecen repisas, empacan pedidos y los llevan a despacho.
 Usa dependencias propias del proyecto y la fuente incluida en Pygame.
 
 ## Ejecutar
@@ -77,6 +77,9 @@ un jugador: pulsa A o Enter de nuevo para entrar en el centro.
 | Cancelar confirmación | B | Delete (también Backspace) |
 | Mover el personaje en la partida | Joystick izquierdo | W/A/S/D |
 | Levantar / colocar una caja en la partida | A | Enter |
+| Descargar / tomar / empacar / devolver productos | A | Enter |
+| Consultar / cerrar los pedidos propios | X | Q |
+| Pausar / continuar | Start | Esc |
 
 1. Pulsa **A en el mando o Enter en el teclado** para aparecer en el centro.
 2. Usa el joystick izquierdo o las flechas para recorrer **Player 1 ↔ centro ↔ Player 2**.
@@ -108,10 +111,9 @@ Cada jugador mantiene su propio estado de animación. `PLAYER_FRAME_INTERVAL` en
 
 ## Escenario
 
-La partida transcurre en una sala basada en `06-princess`, con sus mismos
-tiles de suelo, paredes y esquinas. El tilesheet se incluye como una copia
-local en `assets/graphics/tilesheet.png`, por lo que Underpaid puede ejecutarse
-sin depender de la carpeta del otro proyecto.
+La partida transcurre en el almacén de `assets/tilemaps/day1.json`.
+Gale carga los tiles y las capas de suelo, paredes y zonas de objetos desde
+Tiled, con imágenes locales de `assets/graphics/`.
 
 `src/world/Room.py` construye la sala de 20 × 14 tiles. Comienza 32 píxeles más abajo
 para reservar una franja blanca superior para el reloj, y llega hasta el borde inferior
@@ -128,7 +130,8 @@ resuelven por eje para poder deslizarse junto al compañero, incluso cargando ca
 
 ## Duración de la partida
 
-Cada partida dura **8 minutos**. El reloj aparece arriba, centrado sobre una
+Cada jornada dura **hasta 8 minutos** y termina antes si se entregan todos los pedidos.
+El reloj aparece arriba, centrado sobre una
 franja blanca de un tile de alto, y avanza desde **8:00 AM** hasta **4:00 PM**,
 como un horario de trabajo. Cada minuto real equivale a una hora del juego:
 tras cuatro minutos reales marca **12:00 PM**.
@@ -147,6 +150,33 @@ El botón **Continuar** (o Esc, Start o B) recupera la misma jornada, sin reinic
 el tiempo ni los objetos. **Menú principal** abandona la jornada y cancela su reloj.
 Los botones admiten teclado, ratón y cruceta/A del mando.
 
+## Completar pedidos
+
+Al iniciar la jornada a las **8 AM**, cada jugador recibe **dos pedidos procedurales**,
+de **2 a 5 productos** cada uno. Q en teclado o X en mando abre o cierra su lista.
+Mientras consulta pedidos, su personaje se detiene y el otro puede seguir trabajando;
+el reloj continúa avanzando. Ambos jugadores pueden colaborar con cualquier pedido.
+
+1. Levanta una caja grande de la zona gris de descarga. Las cajas contienen
+   exactamente los productos necesarios para los cuatro pedidos.
+2. Colócate frente a la repisa del producto que contiene la caja. Cuando aparezca
+   **Descargar productos**, pulsa Enter/A para transferir **una unidad por pulsación**.
+   No se pueden tomar productos directamente de las cajas grandes. Al vaciarse, desaparecen.
+3. Toma una caja vacía de los puestos: **pequeña para 2 o 3 productos**,
+   **mediana para 4 o 5**. Cada caja respeta esa capacidad máxima.
+4. Coloca la caja sobre una mesa libre con Enter/A. Cada mesa admite una caja.
+5. Con las manos libres, busca la repisa necesaria. **Tomar [producto]** retira
+   una unidad. Sólo puedes transportar un producto o una caja a la vez.
+6. Regresa frente a la caja de la mesa. **Empacar** introduce el producto con Enter/A.
+   Repite el recorrido para cada unidad, incluidas las unidades repetidas.
+7. Con las manos libres, levanta la caja y colócala completamente dentro de
+   la zona amarilla de despacho. Debe tener el tamaño y el contenido exactos del pedido.
+
+Para corregir una caja, levántala y acércate a la repisa del producto equivocado:
+**Devolver todos: [producto]** devuelve todas sus unidades de ese tipo en una sola
+pulsación y conserva los otros productos. También puedes devolver a su repisa
+un producto que todavía tengas en mano. Las cajas pequeñas y medianas vacías se conservan.
+
 ## Puntuación y derrota
 
 El prototipo comienza con **5 estrellas**. La zona de despacho es el rectángulo
@@ -154,14 +184,16 @@ amarillo junto a la pared derecha. Coloca las cajas de pedidos (medianas y peque
 antes de las **4:00 PM**. Al finalizar la jornada se cuentan únicamente las cajas de pedidos
 en el suelo y completamente dentro de esa zona; cargar uno sobre la cabeza no lo entrega.
 
-Cada caja de pedido entregada suma un punto al total acumulado. Si falta al menos una,
+Cada pedido válido suma **100 puntos** al finalizar. Cada caja incorrecta, vacía,
+duplicada o de tamaño inadecuado que esté en despacho resta **50 puntos** al finalizar;
+se puede corregir o retirar antes. Una caja sólo cumple un pedido. Si falta al menos uno,
 el almacén pierde una estrella; entregar todos los pedidos conserva las estrellas.
 El resumen permite empezar otra jornada mientras queden estrellas, sin límite de
 días ni de puntos. **Perder las cinco estrellas termina el juego**. Elegir Jugar
 desde el menú inicia una sesión nueva con cinco estrellas y cero puntos.
 
 Las cajas grandes representan la recepción de productos y no cuentan como pedidos
-entregados. La generación de pedidos, el empaquetado y los camiones todavía no están implementados. La desconexión de
+entregados. Las animaciones de los camiones todavía no están implementadas. La desconexión de
 un mando conserva al participante conectado y vuelve a selección; al confirmar
 de nuevo se reinicia la jornada, manteniendo la puntuación de la sesión.
 
@@ -189,8 +221,8 @@ locales `projects/01-pong` a `projects/08-throw_a_bird`, especialmente `06-princ
 
 ## Objetos levantables
 
-La sala comienza sin cajas; no se generan al iniciar ni al pasar a otra jornada.
-Los tres tipos siguen disponibles en `src/world/Box.py` para futuras mecánicas de recepción y pedidos.
+Cada jornada comienza con cajas grandes de productos en la zona de descarga;
+las cajas pequeñas y medianas se obtienen vacías desde sus puestos.
 Cada tipo usa su propio sprite de `assets/graphics/`, escalado sin suavizado para conservar el pixel art.
 
 | Tipo (`box_type`) | Tamaño | Sprite | Uso |
@@ -199,7 +231,9 @@ Cada tipo usa su propio sprite de `assets/graphics/`, escalado sin suavizado par
 | `medium` | 32 × 32 píxeles | `medium_box.png` | Pedidos medianos |
 | `small` | 16 × 16 píxeles | `small_box.png` | Pedidos pequeños |
 
-`Box(x, y, box_type="medium")` permite crear cada tipo; los tipos desconocidos se rechazan.
+`Box(x, y, box_type="medium", contents=None)` permite crear cada tipo y su inventario
+inicial, por ejemplo `contents={0: 2, 1: 1}`. Las cantidades, los tipos y la capacidad
+se validan antes de modificar el contenido.
 La colisión ocupa el tamaño de la caja y se calcula contra la mitad inferior de los personajes. Los jugadores
 pueden deslizarse junto a los objetos sin atravesarlos.
 
@@ -237,14 +271,19 @@ agrupando los espacios de dos en dos de izquierda a derecha. Cada mesa mide
 64 píxeles de ancho por 32 de alto y comienza en el primer espacio de su pareja.
 El mapa actual genera dos mesas completas. Usan el sprite
 `assets/graphics/table.png` y se dibujan junto a personajes y repisas según su
-posición en el suelo. Son muebles fijos: bloquean el paso y la colocación de cajas.
+posición en el suelo. Son muebles fijos que bloquean el paso y admiten una caja
+pequeña o mediana en su superficie para empacar productos.
 
 ## Repisas y productos
 
 Las repisas se crean desde la capa de objetos `shelfs` del mapa `day1.json`.
 Cada objeto define su posición, dimensiones y una propiedad entera `type`
 que identifica el único tipo de producto admitido. Comienzan vacías y son
-obstáculos fijos: no pueden levantarse ni colocarse cajas encima.
+obstáculos fijos: no pueden levantarse ni colocarse cajas encima. Muestran el
+producto asignado y sus existencias.
+
+El spritesheet `assets/graphics/products.png` contiene cinco sprites de 32 × 32
+en este orden: **0 Camisa, 1 Audífonos, 2 Pantalones, 3 Teléfono, 4 Zapatos**.
 
 `Product(product_type, name="")` describe un tipo de producto. Cada `Shelf`
 mantiene el producto almacenado y la cantidad disponible. `add(product, quantity=1)`
@@ -263,11 +302,11 @@ Ejemplo de abastecimiento desde código:
 from src.world.Product import Product
 
 shelf = room.shelves[0]
-shelf.add(Product(shelf.product_type, "Libro"), quantity=3)
+shelf.add(Product(shelf.product_type), quantity=3)
 shelf.remove(quantity=1)
 ```
 
-La interacción de jugadores para abastecer o retirar productos queda pendiente.
+El abastecimiento, los retiros y las devoluciones usan Enter/A frente a la repisa.
 
 ## Verificación
 
