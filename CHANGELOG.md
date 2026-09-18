@@ -9,6 +9,10 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Added
 
+- Soporte para dos jugadores de teclado de forma simultánea e independiente (Teclado 1: WASD+Espacio+Esc, Teclado 2: Flechas+Enter+Supr), conservando compatibilidad completa con mandos conectados.
+- Refactorización de la lógica de movimiento en `Player` y `commands` para depender exclusivamente de eventos lógicos de Gale, eliminando diccionarios de conversión redundantes y acoplamiento con constantes puras de Pygame.
+- Interceptación y traducción condicional global de los prefijos de entrada en `Underpaid.py` y `PlayState.py` para abstraer correctamente los dispositivos de cada jugador.
+
 - Panel de pedidos unificado y centrado que pausa el juego para ambos jugadores al abrirse, e incluye los horarios exactos de llegada de los camiones de despacho.
 - Lógica de la jornada reestructurada para analizar la demanda temprana y tardía, garantizando de forma matemática que los productos siempre sean entregados al almacén antes del horario exigido.
 - La cantidad de cajas grandes por entrega de abastecimiento se fijó exactamente a 4 por cada camión (8 en total por jornada).

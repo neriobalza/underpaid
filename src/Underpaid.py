@@ -128,14 +128,16 @@ class Underpaid(Game):
             if input_data.pressed and self.back_held:
                 return
             self.back_held = input_data.pressed
+        if (input_id.startswith("keyboard_") or input_id.startswith("keyboard1_") or input_id.startswith("keyboard2_")) and isinstance(
+            self.state_machine.current, (MainMenuState, SettingsState, GameOverState, PauseState)
+        ):
+            action = input_id.split("_", 1)[1]
+            if action in ("confirm", "cancel", "up", "down", "left", "right", "back"):
+                input_id = action
         if input_id == "cancel" and isinstance(
             self.state_machine.current, (MainMenuState, SettingsState, GameOverState, PauseState)
         ):
             input_id = "back"
-        if input_id.startswith("keyboard_") and isinstance(
-            self.state_machine.current, (MainMenuState, SettingsState, GameOverState, PauseState)
-        ):
-            input_id = input_id.removeprefix("keyboard_")
         if input_id.startswith("pad_"):
             self.controllers.refresh()
             if not self.controllers.is_connected(input_data.gamepad_id):

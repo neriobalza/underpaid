@@ -92,36 +92,37 @@ class PlayerSelectState(BaseState):
         player.unselect()
         self.message = "Puedes seguir escogiendo. A / Enter confirma."
 
-    def on_keyboard(self, input_data) -> None:
-        key = input_data.key
-        if not input_data.pressed:
-            self.keyboard_keys.discard(key)
-            return
-        # Mantener Enter o una flecha no debe registrar o saltar dos veces.
-        if key in self.keyboard_keys:
-            return
-        self.keyboard_keys.add(key)
-        source = settings.KEYBOARD_INPUT
-        if key == pygame.K_RETURN:
-            if source not in self.participants:
-                self.join(source)
-            else:
-                self.confirm(source)
-        elif source in self.participants:
-            if key in (pygame.K_DELETE, pygame.K_BACKSPACE):
-                self.cancel(source)
-            elif key in (pygame.K_LEFT, pygame.K_RIGHT):
-                self.move_choice(source, -1 if key == pygame.K_LEFT else 1)
-                self.stick_ready[source] = True
-
     def on_input(self, input_id, input_data) -> None:
         self.update(0)
         if input_id == "back" and input_data.pressed:
             self.state_machine.change("main_menu")
             return
-        if hasattr(input_data, "key"):
-            self.on_keyboard(input_data)
+
+        # Keyboard inputs
+        if input_id.startswith("keyboard1_") or input_id.startswith("keyboard2_"):
+            source = input_id.split("_")[0]
+            action = input_id.split("_")[1]
+            
+            if not input_data.pressed:
+                # Cancel ready state when releasing keys to avoid accidental double movements
+                if action in ("left", "right"):
+                    self.stick_ready[source] = True
+                return
+                
+            if action == "confirm":
+                if source not in self.participants:
+                    self.join(source)
+                else:
+                    self.confirm(source)
+            elif source in self.participants:
+                if action == "cancel":
+                    self.cancel(source)
+                elif action in ("left", "right"):
+                    self.move_choice(source, -1 if action == "left" else 1)
+                    self.stick_ready[source] = True
             return
+
+        # Gamepad inputs
         instance_id = getattr(input_data, "gamepad_id", None)
         if instance_id is None or not self.game.controllers.is_connected(instance_id):
             return
@@ -160,14 +161,17 @@ class PlayerSelectState(BaseState):
             player.position.update(x, y)
             player.render(surface)
             if player.uses_keyboard:
-                device = "Teclado"
+                device = "Teclado 1" if player.input_source == "keyboard1" else "Teclado 2"
             else:
                 controller_number += 1
                 device = f"Mando {controller_number}"
             label = self.game.fonts["small"].render(device, True, color)
             surface.blit(label, label.get_rect(center=(x, y - 40)))
-            confirm_key = "Enter" if player.uses_keyboard else "A"
-            cancel_key = "Delete" if player.uses_keyboard else "B"
+            if player.uses_keyboard:
+                confirm_key = "Space" if player.input_source == "keyboard1" else "Enter"
+                cancel_key = "Del" if player.input_source == "keyboard1" else "Back"
+            else:
+                confirm_key, cancel_key = "A", "B"
             status = f"Listo · {cancel_key}" if player.number else f"{confirm_key}: listo" if choice else "Elige lado"
             label = self.game.fonts["small"].render(status, True, color)
             surface.blit(label, label.get_rect(center=(x, y + 40)))

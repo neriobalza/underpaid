@@ -7,12 +7,12 @@ from gale.input_handler import apply_deadzone
 from gale.tilemap import move_and_collide
 
 import settings
-from src.input.commands import MOVEMENT_COMMANDS
+from src.input.commands import SetMovementDirection
 
 
 class Player:
     def __init__(self, input_source: int | str) -> None:
-        if input_source != settings.KEYBOARD_INPUT and (
+        if input_source not in (settings.KEYBOARD_INPUT, "keyboard1", "keyboard2") and (
             type(input_source) is not int or input_source < 0
         ):
             raise ValueError("La entrada debe ser el teclado o un ID de instancia válido")
@@ -20,10 +20,16 @@ class Player:
         self.number: int | None = None
         self.position = pygame.Vector2(settings.VIRTUAL_WIDTH / 2, 260)
         self.direction = pygame.Vector2()
-        self.keyboard_keys: set[int] = set()
+        self.active_directions: set[str] = set()
         self.command_bindings = CommandBindings()
-        for action, (press, release) in MOVEMENT_COMMANDS.items():
-            self.command_bindings.bind(action, press=press, release=release)
+        
+        if self.uses_keyboard:
+            for action in ("up", "down", "left", "right"):
+                self.command_bindings.bind(
+                    f"{self.input_source}_{action}", 
+                    press=SetMovementDirection(action, True), 
+                    release=SetMovementDirection(action, False)
+                )
         self.facing = "down"
         self.animations = {
             direction: Animation(frames, settings.PLAYER_FRAME_INTERVAL)
@@ -44,7 +50,7 @@ class Player:
 
     @property
     def uses_keyboard(self) -> bool:
-        return self.input_source == settings.KEYBOARD_INPUT
+        return self.input_source in (settings.KEYBOARD_INPUT, "keyboard1", "keyboard2")
 
     @property
     def controller_id(self) -> int | None:
@@ -73,8 +79,8 @@ class Player:
         self.stop()
 
     def stop(self) -> None:
-        self.direction.update(0, 0)
-        self.keyboard_keys.clear()
+        self.direction.update()
+        self.active_directions.clear()
         self.animation.reset()
 
     def unselect(self) -> None:
@@ -183,23 +189,25 @@ class Player:
     def on_input(self, input_id, input_data) -> None:
         if self.number is None:
             return
-        interaction = (
-            self.uses_keyboard and input_id == "confirm"
-            and getattr(input_data, "key", None) == pygame.K_RETURN
-        ) or (
-            not self.uses_keyboard and input_id == "pad_a"
-            and getattr(input_data, "gamepad_id", None) == self.controller_id
-        )
+        if self.uses_keyboard:
+            interaction = (
+                input_id in ("keyboard1_confirm", "keyboard2_confirm")
+                and input_id.startswith(self.input_source)
+            )
+        else:
+            interaction = (input_id == "pad_a" and getattr(input_data, "gamepad_id", None) == self.controller_id)
+
         if interaction:
             if input_data.pressed and not self.interact_held:
                 self.interact_requested = True
             self.interact_held = input_data.pressed
             return
+
         if self.uses_keyboard:
-            if not input_id.startswith("keyboard_") or not hasattr(input_data, "key"):
+            if not input_id.startswith(self.input_source):
                 return
-            key = input_data.key
-            if key not in (pygame.K_w, pygame.K_a, pygame.K_s, pygame.K_d):
+            action = input_id.split("_")[1]
+            if action not in ("up", "down", "left", "right"):
                 return
             self.command_bindings.dispatch(self, input_id, input_data)
             return

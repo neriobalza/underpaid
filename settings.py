@@ -224,20 +224,23 @@ def create_fonts() -> dict[str, pygame.font.Font]:
 
 
 for key, action in (
-    (pygame.K_UP, "up"),
-    (pygame.K_w, "keyboard_up"),
-    (pygame.K_DOWN, "down"),
-    (pygame.K_s, "keyboard_down"),
-    (pygame.K_LEFT, "left"),
-    (pygame.K_a, "keyboard_left"),
-    (pygame.K_RIGHT, "right"),
-    (pygame.K_d, "keyboard_right"),
-    (pygame.K_RETURN, "confirm"),
-    (pygame.K_SPACE, "confirm"),
-    (pygame.K_ESCAPE, "back"),
-    (pygame.K_q, "keyboard_orders"),
-    (pygame.K_DELETE, "cancel"),
-    (pygame.K_BACKSPACE, "cancel"),
+    # Jugador 1
+    (pygame.K_w, "keyboard1_up"),
+    (pygame.K_s, "keyboard1_down"),
+    (pygame.K_a, "keyboard1_left"),
+    (pygame.K_d, "keyboard1_right"),
+    (pygame.K_SPACE, "keyboard1_confirm"),
+    (pygame.K_ESCAPE, "keyboard1_cancel"),
+    (pygame.K_l, "keyboard1_orders"),
+    
+    # Jugador 2
+    (pygame.K_UP, "keyboard2_up"),
+    (pygame.K_DOWN, "keyboard2_down"),
+    (pygame.K_LEFT, "keyboard2_left"),
+    (pygame.K_RIGHT, "keyboard2_right"),
+    (pygame.K_RETURN, "keyboard2_confirm"),
+    (pygame.K_DELETE, "keyboard2_cancel"),
+    (pygame.K_q, "keyboard2_orders"),
 ):
     InputHandler.set_keyboard_action(key, action)
 

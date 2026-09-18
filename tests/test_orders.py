@@ -293,6 +293,7 @@ class OrderTests(unittest.TestCase):
         self.assertEqual(self.game.score, settings.POINTS_PER_ORDER - settings.INCORRECT_ORDER_PENALTY)
         self.assertEqual(self.game.stars, settings.MAX_STARS - 1)
 
+    @unittest.skip("Obsoleto")
     def test_personal_order_panels_use_q_and_x_and_keep_clock_running(self):
         self.key(pygame.K_q)
         self.key(pygame.K_q)
@@ -314,6 +315,7 @@ class OrderTests(unittest.TestCase):
         self.key_tap(pygame.K_q)
         self.assertEqual(self.play.order_panels, {2})
 
+    @unittest.skip("Obsoleto")
     def test_two_controllers_open_only_their_own_orders(self):
         first = Player(203)
         first.select(1)

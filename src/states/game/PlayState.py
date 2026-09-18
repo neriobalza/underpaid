@@ -125,18 +125,20 @@ class PlayState(BaseState):
     def reset_input(self) -> None:
         self.orders_held.clear()
         for player in self.players.values():
-            player.direction.update(0, 0)
-            player.keyboard_keys.clear()
+            player.direction.update()
+            if hasattr(player, "active_directions"):
+                player.active_directions.clear()
             player.interact_held = False
             player.interact_requested = False
 
     def on_input(self, input_id, input_data) -> None:
-        if input_id in ("back", "pad_pause") and input_data.pressed:
+        if input_id in ("keyboard1_cancel", "keyboard2_cancel", "pad_pause") and input_data.pressed:
             self.state_machine.push(PauseState(self.state_machine, self.game), play_state=self)
             return
-        if input_id in ("keyboard_orders", "pad_orders"):
+        if input_id in ("keyboard1_orders", "keyboard2_orders", "pad_orders"):
             owner = next((player.number for player in self.players.values()
-                          if (input_id == "keyboard_orders" and player.uses_keyboard)
+                          if (input_id == "keyboard1_orders" and player.input_source in ("keyboard", "keyboard1"))
+                          or (input_id == "keyboard2_orders" and player.input_source == "keyboard2")
                           or (input_id == "pad_orders" and player.controller_id == input_data.gamepad_id)), None)
             if owner is not None:
                 if input_data.pressed and owner not in self.orders_held:
@@ -151,7 +153,10 @@ class PlayState(BaseState):
                     self.orders_held.discard(owner)
             return
         if getattr(self, "active_dialog", None):
-            self.active_dialog.on_input(input_id, input_data)
+            if input_id in ("keyboard1_confirm", "keyboard2_confirm"):
+                self.active_dialog.on_input("confirm", input_data)
+            else:
+                self.active_dialog.on_input(input_id, input_data)
             return
 
         for player in self.players.values():
