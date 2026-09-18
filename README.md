@@ -230,6 +230,15 @@ La colocación consulta la capa de paredes del mapa de Tiled para toda el área
 de la caja; también bloquea la segunda fila de la pared superior y los
 solapamientos parciales de cajas grandes o subcasillas pequeñas.
 
+## Mesas de trabajo
+
+Las mesas se crean desde la capa de objetos `table` del mapa `day1.json`,
+agrupando los espacios de dos en dos de izquierda a derecha. Cada mesa mide
+64 píxeles de ancho por 32 de alto y comienza en el primer espacio de su pareja.
+El mapa actual genera dos mesas completas. Usan el sprite
+`assets/graphics/table.png` y se dibujan junto a personajes y repisas según su
+posición en el suelo. Son muebles fijos: bloquean el paso y la colocación de cajas.
+
 ## Repisas y productos
 
 Las repisas se crean desde la capa de objetos `shelfs` del mapa `day1.json`.

@@ -118,6 +118,11 @@ def load_box_image(box_type: str) -> pygame.Surface:
 
 
 @lru_cache(maxsize=1)
+def load_table_sprite() -> pygame.Surface:
+    return pygame.image.load(BASE_DIR / "assets" / "graphics" / "table.png").convert_alpha()
+
+
+@lru_cache(maxsize=1)
 def load_shelf_frames() -> tuple[pygame.Surface, ...]:
     """Primer sprite: repisa vacía; segundo: repisa con productos."""
     sheet = pygame.image.load(BASE_DIR / "assets" / "graphics" / "shelf.png").convert_alpha()

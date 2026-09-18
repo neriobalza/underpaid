@@ -8,6 +8,7 @@ from gale.tilemap import CollisionType, collision_type_at, load_tiled_map
 
 import settings
 from src.world.Shelf import Shelf
+from src.world.Table import Table
 
 
 class Room:
@@ -54,6 +55,13 @@ class Room:
                   obj.properties.get("type", 0), obj.width, obj.height)
             for obj in self.tilemap.object_layers.get("shelfs", [])
         ]
+        # Una mesa completa ocupa dos espacios de trabajo consecutivos.
+        table_spaces = sorted(self.tilemap.object_layers.get("table", []), key=lambda obj: (obj.x, obj.y))
+        self.tables = [
+            Table(self.bounds.x + table_spaces[index].x, self.bounds.y + table_spaces[index].y,
+                  2 * size, size)
+            for index in range(0, len(table_spaces) - 1, 2)
+        ]
 
         # La sala es estática: se dibuja una vez y se reutiliza cada frame.
         self.background = pygame.Surface(self.bounds.size)
@@ -69,7 +77,7 @@ class Room:
 
     @property
     def obstacles(self) -> list:
-        return self.objects + self.shelves
+        return self.objects + self.shelves + self.tables
 
     def render(self, surface: pygame.Surface) -> None:
         surface.blit(self.background, self.bounds)

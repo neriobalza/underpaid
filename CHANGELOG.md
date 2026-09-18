@@ -9,6 +9,9 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Added
 
+- Mesas de trabajo de 64 píxeles de ancho por 32 de alto con el sprite completo
+  `table.png`, una por cada pareja de espacios de la capa `table` del mapa,
+  con colisiones y bloqueo de la colocación de cajas.
 - Pausa con `Esc` o Start del mando mediante una pila de estados de Gale,
   con panel semitransparente y botones para continuar o volver al menú principal.
 - Reloj, personajes y diálogos detenidos durante la pausa, conservando la
