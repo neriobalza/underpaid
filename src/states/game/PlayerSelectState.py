@@ -14,7 +14,7 @@ class PlayerSelectState(BaseState):
         super().__init__(state_machine)
         self.game = game
 
-    def enter(self, players=None) -> None:
+    def enter(self, players=None, message: str = "") -> None:
         # Sólo las elecciones confirmadas reservan un personaje.
         self.players = dict(players or {})
         self.participants = {p.input_source: p for p in self.players.values()}
@@ -22,7 +22,7 @@ class PlayerSelectState(BaseState):
         self.stick_ready = {instance_id: True for instance_id in self.participants}
         for player in self.participants.values():
             player.stop()
-        self.message = ""
+        self.message = message
         self.keyboard_keys: set[int] = set()
 
     def update(self, dt: float) -> None:
@@ -175,6 +175,7 @@ class PlayerSelectState(BaseState):
             status = f"Listo · {cancel_key}" if player.number else f"{confirm_key}: listo" if choice else "Elige lado"
             label = self.game.fonts["small"].render(status, True, color)
             surface.blit(label, label.get_rect(center=(x, y + 40)))
-        draw_text(surface, self.message, self.game.fonts["small"], 418)
+        color = settings.PLACEMENT_INVALID_COLOR if "desconectado" in self.message.lower() else settings.TEXT_COLOR
+        draw_text(surface, self.message, self.game.fonts["small"], 418, color)
         draw_text(surface, "La partida comienza cuando ambos confirman · Esc: volver",
                   self.game.fonts["small"], 452, settings.MUTED_COLOR)

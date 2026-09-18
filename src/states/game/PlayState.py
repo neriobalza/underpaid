@@ -96,12 +96,8 @@ class PlayState(BaseState):
                 self.active_dialog = None
             return
 
-        connected = {
-            number: player for number, player in self.players.items()
-            if player.is_connected(self.game.controllers)
-        }
-        if len(connected) != 2:
-            self.state_machine.change("player_select", players=connected)
+        if not all(player.is_connected(self.game.controllers) for player in self.players.values()):
+            self.state_machine.change("player_select", message="Mando desconectado. Partida reiniciada.")
             return
             
         self.room.update(dt)
