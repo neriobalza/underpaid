@@ -231,7 +231,7 @@ for key, action in (
     (pygame.K_d, "keyboard1_right"),
     (pygame.K_SPACE, "keyboard1_confirm"),
     (pygame.K_ESCAPE, "keyboard1_cancel"),
-    (pygame.K_l, "keyboard1_orders"),
+    (pygame.K_q, "keyboard1_orders"),
     
     # Jugador 2
     (pygame.K_UP, "keyboard2_up"),
@@ -240,7 +240,7 @@ for key, action in (
     (pygame.K_RIGHT, "keyboard2_right"),
     (pygame.K_RETURN, "keyboard2_confirm"),
     (pygame.K_DELETE, "keyboard2_cancel"),
-    (pygame.K_q, "keyboard2_orders"),
+    (pygame.K_RSHIFT, "keyboard2_orders"),
 ):
     InputHandler.set_keyboard_action(key, action)
 
