@@ -9,6 +9,16 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Added
 
+- Panel de pedidos unificado y centrado que pausa el juego para ambos jugadores al abrirse, e incluye los horarios exactos de llegada de los camiones de despacho.
+- Lógica de la jornada reestructurada para analizar la demanda temprana y tardía, garantizando de forma matemática que los productos siempre sean entregados al almacén antes del horario exigido.
+- La cantidad de cajas grandes por entrega de abastecimiento se fijó exactamente a 4 por cada camión (8 en total por jornada).
+
+- Patrón Strategy (`DaySchedule`) para controlar los tiempos de llegada y salida de los camiones, agregando un 30% de margen a los productos necesarios y distribuyéndolos en cajas de hasta 10 elementos.
+- Llegada de camiones de entrega dividida en 2 lotes durante la jornada (inicio y mitad del día).
+- Múltiples camiones de despacho que llegan en intervalos, recogiendo paquetes específicos usando `truck_id`.
+- Interfaz gráfica (`OrdersPanel`) actualizada para indicar el camión correspondiente a cada pedido.
+- Animación de texto flotante que aparece sobre el último jugador que transportó una caja cuando se envía incorrectamente, restando 5 centavos de su salario base (200¢).
+
 - Pedidos procedurales de dos a cinco productos para cada jugador, con listas
   personales que se consultan con Q en teclado o X en mando.
 - Cinco productos identificables: camisas, audífonos, pantalones, teléfonos y zapatos.

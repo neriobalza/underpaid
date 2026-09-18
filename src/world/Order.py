@@ -8,11 +8,12 @@ from src.world.Product import Product
 
 
 class Order:
-    def __init__(self, number: int, owner: int, requirements) -> None:
+    def __init__(self, number: int, owner: int, requirements, truck_id: int = 1) -> None:
         if type(number) is not int or number <= 0 or type(owner) is not int or owner not in (1, 2):
             raise ValueError("El pedido requiere un número positivo y un jugador válido")
         self.number = number
         self.owner = owner
+        self.truck_id = truck_id
         self._requirements = Counter(requirements)
         for product_type, quantity in self._requirements.items():
             Product(product_type)
@@ -37,12 +38,13 @@ class Order:
         return box.box_type == self.box_type and box.contents == self._requirements
 
 
-def generate_orders(rng=None) -> list[Order]:
+def generate_orders(rng=None, num_trucks: int = 1) -> list[Order]:
     rng = rng or random.Random()
     orders = []
     for owner in (1, 2):
         for _ in range(settings.ORDERS_PER_PLAYER):
             quantity = rng.randint(settings.ORDER_MIN_PRODUCTS, settings.ORDER_MAX_PRODUCTS)
             requirements = Counter(rng.randrange(len(settings.PRODUCT_NAMES)) for _ in range(quantity))
-            orders.append(Order(len(orders) + 1, owner, requirements))
+            truck_id = rng.randint(1, num_trucks)
+            orders.append(Order(len(orders) + 1, owner, requirements, truck_id))
     return orders

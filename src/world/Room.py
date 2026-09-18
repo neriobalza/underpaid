@@ -13,9 +13,12 @@ from src.world.Box import Box
 from src.world.BoxDispenser import BoxDispenser
 from src.world.Order import generate_orders
 from src.world.Truck import Truck
+from src.world.DaySchedule import DaySchedule
 
 class Room:
     def __init__(self) -> None:
+        self.delivered_orders = {}
+        self.incorrect_boxes = []
         size = settings.TILE_RENDER_SIZE
         
         map_path = settings.BASE_DIR / "assets" / "tilemaps" / "day1.json"
@@ -31,8 +34,8 @@ class Room:
         self.unloading_area = pygame.Rect(self.bounds.x, self.bounds.y, size, size)
         self.objects = []
         self.orders = []
-        self.incoming_truck = None
-        self.outcoming_truck = None
+        self.unloading_truck = None
+        self.dispatch_truck = None
         
         with open(map_path) as f:
             map_data = json.load(f)
@@ -54,19 +57,19 @@ class Room:
                                 self.bounds.x + obj.get("x", 0), self.bounds.y + obj.get("y", 0),
                                 obj.get("width", 0), obj.get("height", 0)
                             )
-                    elif layer_name == "incoming_truck":
+                    elif layer_name == "unloading_truck":
                         if layer.get("objects"):
                             obj = layer["objects"][0]
                             tile_val = next((p["value"] for p in obj.get("properties", []) if p["name"] == "tile"), 1)
-                            self.incoming_truck = Truck(
+                            self.unloading_truck = Truck(
                                 self.bounds.x + obj.get("x", 0), self.bounds.y + obj.get("y", 0),
                                 obj.get("width", 0), obj.get("height", 0), tile_val
                             )
-                    elif layer_name == "outcoming_truck":
+                    elif layer_name == "dispatch_truck":
                         if layer.get("objects"):
                             obj = layer["objects"][0]
                             tile_val = next((p["value"] for p in obj.get("properties", []) if p["name"] == "tile"), 1)
-                            self.outcoming_truck = Truck(
+                            self.dispatch_truck = Truck(
                                 self.bounds.x + obj.get("x", 0), self.bounds.y + obj.get("y", 0),
                                 obj.get("width", 0), obj.get("height", 0), tile_val
                             )
@@ -119,52 +122,34 @@ class Room:
         return [obj for obj in self.objects if obj.table is None] + self.shelves + self.tables + self.dispensers
 
     def start_day(self, rng=None) -> None:
-        """Genera los pedidos y exactamente sus productos en recepción."""
-        orders = generate_orders(rng)
         if len({shelf.product_type for shelf in self.shelves}) != len(settings.PRODUCT_NAMES):
             raise ValueError("El almacén requiere una repisa para cada uno de los cinco productos")
         if not self.tables or {station.box_type for station in self.dispensers} != {"small", "medium"}:
             raise ValueError("El almacén requiere mesas y dispensadores de cajas pequeñas y medianas")
-        width, height = settings.BOX_SIZES["large"]
-        slots = [
-            pygame.Rect(x, y, width, height)
-            for y in range(self.unloading_area.top, self.unloading_area.bottom - height + 1, height)
-            for x in range(self.unloading_area.left, self.unloading_area.right - width + 1, width)
-            if self.floor_contains(pygame.Rect(x, y, width, height))
-            and not any(pygame.Rect(x, y, width, height).colliderect(obj.hitbox) for obj in self.obstacles)
-        ]
-        if len(slots) < len(orders):
-            raise ValueError("La zona de descarga no tiene espacio para los productos de la jornada")
-        self.orders = orders
-        self.objects = [Box(slot.x, slot.y, "large", order.requirements)
-                        for slot, order in zip(slots, orders)]
+            
+        self.delivered_orders = {}
+        self.incorrect_boxes = []
+        self.strategy = DaySchedule(self, rng)
+        self.on_dispatch_depart = None
+
+    def update(self, dt: float) -> None:
+        if hasattr(self, "strategy"):
+            self.strategy.update(dt)
 
     def render(self, surface: pygame.Surface) -> None:
         surface.blit(self.background, self.bounds)
-        if self.incoming_truck:
-            self.incoming_truck.render(surface)
-        if self.outcoming_truck:
-            self.outcoming_truck.render(surface)
+        if self.unloading_truck:
+            self.unloading_truck.render(surface)
+        if self.dispatch_truck:
+            self.dispatch_truck.render(surface)
         pygame.draw.rect(surface, settings.ACCENT_COLOR, self.dispatch_area, width=2)
         pygame.draw.rect(surface, (128, 128, 128), self.unloading_area, width=2)
 
     def count_deliveries(self) -> int:
-        """Cada caja correcta cuenta para un único pedido pendiente."""
-        return len(self.delivery_report()[0])
+        return len(self.delivered_orders)
 
     def delivery_report(self) -> tuple[dict, list]:
-        delivered = {}
-        incorrect = []
-        for box in self.objects:
-            if not box.is_order or not box.solid or box.table is not None or not self.dispatch_area.contains(box.hitbox):
-                continue
-            order = next((order for order in self.orders
-                          if order.number not in delivered and order.matches(box)), None)
-            if order is None:
-                incorrect.append(box)
-            else:
-                delivered[order.number] = box
-        return delivered, incorrect
+        return self.delivered_orders, self.incorrect_boxes
 
     @property
     def order_count(self) -> int:

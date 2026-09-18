@@ -112,6 +112,35 @@
         }, 
         {
          "draworder":"topdown",
+         "id":13,
+         "name":"unloading_truck",
+         "objects":[
+                {
+                 "height":32,
+                 "id":31,
+                 "name":"",
+                 "opacity":1,
+                 "properties":[
+                        {
+                         "name":"tile",
+                         "type":"int",
+                         "value":3
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":128,
+                 "x":256,
+                 "y":0
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
          "id":7,
          "name":"dispatch_area",
          "objects":[
@@ -125,6 +154,35 @@
                  "visible":true,
                  "width":64,
                  "x":512,
+                 "y":192
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "x":0,
+         "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "id":12,
+         "name":"dispatch_truck",
+         "objects":[
+                {
+                 "height":128,
+                 "id":26,
+                 "name":"",
+                 "opacity":1,
+                 "properties":[
+                        {
+                         "name":"tile",
+                         "type":"int",
+                         "value":2
+                        }],
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":32,
+                 "x":608,
                  "y":192
                 }],
          "opacity":1,
@@ -333,64 +391,6 @@
                  "width":32,
                  "x":352,
                  "y":352
-                }],
-         "opacity":1,
-         "type":"objectgroup",
-         "visible":true,
-         "x":0,
-         "y":0
-        }, 
-        {
-         "draworder":"topdown",
-         "id":12,
-         "name":"outcoming_truck",
-         "objects":[
-                {
-                 "height":128,
-                 "id":26,
-                 "name":"",
-                 "opacity":1,
-                 "properties":[
-                        {
-                         "name":"tile",
-                         "type":"int",
-                         "value":2
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":32,
-                 "x":608,
-                 "y":192
-                }],
-         "opacity":1,
-         "type":"objectgroup",
-         "visible":true,
-         "x":0,
-         "y":0
-        }, 
-        {
-         "draworder":"topdown",
-         "id":13,
-         "name":"incoming_truck",
-         "objects":[
-                {
-                 "height":32,
-                 "id":31,
-                 "name":"",
-                 "opacity":1,
-                 "properties":[
-                        {
-                         "name":"tile",
-                         "type":"int",
-                         "value":3
-                        }],
-                 "rotation":0,
-                 "type":"",
-                 "visible":true,
-                 "width":128,
-                 "x":256,
-                 "y":0
                 }],
          "opacity":1,
          "type":"objectgroup",

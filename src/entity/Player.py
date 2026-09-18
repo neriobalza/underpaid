@@ -40,6 +40,7 @@ class Player:
         self.lift_start = pygame.Vector2()
         self.interact_held = False
         self.interact_requested = False
+        self.salary = 200
 
     @property
     def uses_keyboard(self) -> bool:
@@ -98,6 +99,8 @@ class Player:
             self.carrying.floor_position.update(position)
             self.carrying.position.update(position)
             self.carrying.carrier = None
+            if hasattr(self.carrying, "last_carrier_number"):
+                self.carrying.last_carrier_number = self.number
             self.carrying = None
         self.lift_elapsed = 0.0
         self.animation = self.animations[self.facing]

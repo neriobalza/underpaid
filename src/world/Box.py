@@ -19,6 +19,7 @@ class Box:
         self.floor_position = self.position.copy()
         self.width, self.height = settings.BOX_SIZES[box_type]
         self.carrier = None
+        self.last_carrier_number = None
         self.table = None
         self.image = settings.load_box_image(box_type)
         self.label_font = pygame.font.Font(None, 16)

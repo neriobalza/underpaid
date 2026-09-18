@@ -113,10 +113,14 @@ class Underpaid(Game):
         )
 
     def update(self, dt: float) -> None:
+        if self.closed:
+            return
         self.controllers.refresh()
         self.state_stack.update(dt)
 
     def render(self, surface: pygame.Surface) -> None:
+        if self.closed:
+            return
         self.state_stack.render(surface)
 
     def on_input(self, input_id: str, input_data: InputData) -> None:

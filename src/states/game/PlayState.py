@@ -25,7 +25,8 @@ class PlayState(BaseState):
             raise ValueError("La partida requiere dos personajes con entradas diferentes")
         self.room = Room()
         self.room.start_day()
-        self.order_panels = set()
+        self.room.on_dispatch_depart = self.on_dispatch_depart
+        self.show_orders_panel = False
         self.orders_held = set()
         self.orders_panel = OrdersPanel()
         for player in self.players.values():
@@ -54,6 +55,28 @@ class PlayState(BaseState):
         period = "AM" if hours % 24 < 12 else "PM"
         return f"{hours % 12 or 12}:{minutes:02d} {period}"
 
+    def on_dispatch_depart(self, delivered, incorrect, taken_boxes):
+        self.room.delivered_orders.update(delivered)
+        self.room.incorrect_boxes.extend(incorrect)
+        
+        for box in incorrect:
+            self.game.stars = max(0, self.game.stars - 0.05)
+            if box.last_carrier_number and box.last_carrier_number in self.players:
+                player = self.players[box.last_carrier_number]
+                player.salary -= 5
+                self.spawn_penalty_text(player, "-5¢")
+
+    def spawn_penalty_text(self, player, text):
+        import types
+        if not hasattr(self, "penalties"):
+            self.penalties = []
+        pen = types.SimpleNamespace(text=text, x=float(player.position.x), y=float(player.position.y - 60), alpha=255.0)
+        def finish():
+            if pen in getattr(self, "penalties", []):
+                self.penalties.remove(pen)
+        pen.tween = Timer.tween(2.0, [(pen, {"y": pen.y - 30, "alpha": 0.0})], on_finish=finish)
+        self.penalties.append(pen)
+
     def _finish_match(self) -> None:
         if self.state_machine.current is self:
             matched, incorrect = self.room.delivery_report()
@@ -80,8 +103,10 @@ class PlayState(BaseState):
         if len(connected) != 2:
             self.state_machine.change("player_select", players=connected)
             return
+            
+        self.room.update(dt)
         for player in self.players.values():
-            if player.number in self.order_panels:
+            if self.show_orders_panel:
                 continue
             player.update(dt, self.room, self.room.obstacles, self.players.values())
             if player.interact_requested:
@@ -115,14 +140,11 @@ class PlayState(BaseState):
                           or (input_id == "pad_orders" and player.controller_id == input_data.gamepad_id)), None)
             if owner is not None:
                 if input_data.pressed and owner not in self.orders_held:
-                    if owner in self.order_panels:
-                        self.order_panels.remove(owner)
-                    else:
-                        self.order_panels.add(owner)
-                    player = self.players[owner]
-                    player.stop()
-                    player.interact_held = False
-                    player.interact_requested = False
+                    self.show_orders_panel = not self.show_orders_panel
+                    for p in self.players.values():
+                        p.stop()
+                        p.interact_held = False
+                        p.interact_requested = False
                 if input_data.pressed:
                     self.orders_held.add(owner)
                 else:
@@ -133,7 +155,7 @@ class PlayState(BaseState):
             return
 
         for player in self.players.values():
-            if player.number not in self.order_panels:
+            if not self.show_orders_panel:
                 player.on_input(input_id, input_data)
 
     def render(self, surface) -> None:
@@ -145,7 +167,7 @@ class PlayState(BaseState):
         self.room.render_placement(surface, self.players.values())
         for player in self.players.values():
             hint = self.room.interaction_hint(player)
-            if hint and player.number not in self.order_panels:
+            if hint and not self.show_orders_panel:
                 key = "Enter" if player.uses_keyboard else "A"
                 lines = [f"{key}: {hint}"]
                 action, target = self.room.next_action(player)
@@ -169,20 +191,31 @@ class PlayState(BaseState):
                 pygame.draw.rect(surface, settings.PANEL_COLOR, rect.inflate(8, 4), border_radius=4)
                 for index, image in enumerate(images):
                     surface.blit(image, (rect.x, rect.y + index * line_height))
+                    
+        if hasattr(self, "penalties"):
+            for pen in self.penalties:
+                img = self.game.fonts["small"].render(pen.text, True, settings.PLACEMENT_INVALID_COLOR)
+                img.set_alpha(int(pen.alpha))
+                surface.blit(img, (round(pen.x) - img.get_width()//2, round(pen.y)))
+                
         pygame.draw.rect(surface, settings.CLOCK_BAR_COLOR,
                          (0, 0, settings.VIRTUAL_WIDTH, settings.CLOCK_BAR_HEIGHT))
         draw_text(surface, self.clock_text, self.game.fonts["medium"],
                   settings.CLOCK_BAR_HEIGHT // 2, settings.BACKGROUND_COLOR)
+                  
+        stars_str = f"{self.game.stars:.2f}".rstrip('0').rstrip('.')
         label = self.game.fonts["small"].render(
-            f"Día {self.game.day} · {self.game.stars}/{settings.MAX_STARS} estrellas",
+            f"Día {self.game.day} · {stars_str}/{settings.MAX_STARS} estrellas",
             True, settings.BACKGROUND_COLOR,
         )
         surface.blit(label, (20, 7))
-        label = self.game.fonts["small"].render(
-            f"Pedidos: {self.room.count_deliveries()}/{self.room.order_count} · Q/X", True, settings.BACKGROUND_COLOR)
-        surface.blit(label, (settings.VIRTUAL_WIDTH - label.get_width() - 8, 7))
+        
+        salary1 = self.players[1].salary if 1 in self.players else 0
+        salary2 = self.players[2].salary if 2 in self.players else 0
+        label_salary = self.game.fonts["small"].render(f"Salarios: J1: {salary1}¢ | J2: {salary2}¢", True, settings.BACKGROUND_COLOR)
+        surface.blit(label_salary, (settings.VIRTUAL_WIDTH - label_salary.get_width() - 8, 7))
 
         if getattr(self, "active_dialog", None):
             self.active_dialog.render(surface)
-        for owner in sorted(self.order_panels):
-            self.orders_panel.render(surface, self.room, owner)
+        if self.show_orders_panel:
+            self.orders_panel.render(surface, self.room, 1)
