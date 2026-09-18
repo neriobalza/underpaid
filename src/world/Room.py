@@ -9,6 +9,7 @@ from gale.tilemap import CollisionType, collision_type_at, load_tiled_map
 
 import settings
 from src.world.Box import Box
+from src.world.Shelf import Shelf
 
 
 class Room:
@@ -49,6 +50,13 @@ class Room:
                                 obj.get("width", 0), obj.get("height", 0)
                             )
 
+        # Gale carga las posiciones y el tipo asignado desde la zona de repisas.
+        self.shelves = [
+            Shelf(self.bounds.x + obj.x, self.bounds.y + obj.y,
+                  obj.properties.get("type", 0), obj.width, obj.height)
+            for obj in self.tilemap.object_layers.get("shelfs", [])
+        ]
+
         # Spawneamos las cajas como estaban en la rama main
         self.objects = [
             Box(self.bounds.x + col * size, self.bounds.y + row * size, box_type)
@@ -70,6 +78,10 @@ class Room:
             self.walkable_area.left + self.walkable_area.width * fraction,
             self.walkable_area.centery,
         )
+
+    @property
+    def obstacles(self) -> list:
+        return self.objects + self.shelves
 
     def render(self, surface: pygame.Surface) -> None:
         surface.blit(self.background, self.bounds)
@@ -147,7 +159,7 @@ class Room:
             for col in range(first_col, last_col + 1):
                 if collision_type_at(self.tilemap, "walls", row, col) == CollisionType.SOLID:
                     return False
-        if any(other.solid and target.colliderect(other.hitbox) for other in self.objects):
+        if any(other.solid and target.colliderect(other.hitbox) for other in self.obstacles):
             return False
         if any(target.colliderect(other.hitbox) for other in players):
             return False

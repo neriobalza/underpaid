@@ -72,7 +72,7 @@ class PlayState(BaseState):
             self.state_machine.change("player_select", players=connected)
             return
         for player in self.players.values():
-            player.update(dt, self.room, self.room.objects, self.players.values())
+            player.update(dt, self.room, self.room.obstacles, self.players.values())
             if player.interact_requested:
                 player.interact_requested = False
                 self.room.interact(player, self.players.values())
@@ -98,7 +98,7 @@ class PlayState(BaseState):
     def render(self, surface) -> None:
         surface.fill(settings.BACKGROUND_COLOR)
         self.room.render(surface)
-        entities = list(self.players.values()) + [obj for obj in self.room.objects if obj.solid]
+        entities = list(self.players.values()) + [obj for obj in self.room.obstacles if obj.solid]
         for entity in sorted(entities, key=lambda entity: entity.hitbox.bottom):
             entity.render(surface)
         self.room.render_placement(surface, self.players.values())

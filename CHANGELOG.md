@@ -7,6 +7,13 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ## [Unreleased]
 
+### Added
+
+- Repisas en las zonas del almacén definidas por el mapa, dedicadas a un único
+  tipo de producto y con control de existencias.
+- Apariencia de repisa vacía o abastecida según su contenido, con bloqueo del
+  paso de personajes y de la colocación de cajas sobre ella.
+
 ## [0.2.0] - 2026-09-17
 
 ### Added

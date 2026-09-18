@@ -5,6 +5,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from gale.input_handler import InputHandler
+from gale.frames import generate_frames
 from gale.tilemap import Tileset
 
 
@@ -114,6 +115,16 @@ def load_box_image(box_type: str) -> pygame.Surface:
         raise ValueError("Tipo de caja inválido: usa large, medium o small")
     # Escalado sin suavizado para conservar el estilo pixel art del sprite.
     return pygame.transform.scale(load_box_sprite(box_type), BOX_SIZES[box_type])
+
+
+@lru_cache(maxsize=1)
+def load_shelf_frames() -> tuple[pygame.Surface, ...]:
+    """Primer sprite: repisa vacía; segundo: repisa con productos."""
+    sheet = pygame.image.load(BASE_DIR / "assets" / "graphics" / "shelf.png").convert_alpha()
+    frames = generate_frames(sheet, 32, 64)
+    if len(frames) < 2:
+        raise ValueError("El spritesheet de repisas requiere al menos dos sprites de 32 × 64")
+    return tuple(sheet.subsurface(rect).copy() for rect in frames[:2])
 
 
 @lru_cache(maxsize=1)

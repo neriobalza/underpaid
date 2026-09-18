@@ -217,6 +217,36 @@ La colocación consulta la capa de paredes del mapa de Tiled para toda el área
 de la caja; también bloquea la segunda fila de la pared superior y los
 solapamientos parciales de cajas grandes o subcasillas pequeñas.
 
+## Repisas y productos
+
+Las repisas se crean desde la capa de objetos `shelfs` del mapa `day1.json`.
+Cada objeto define su posición, dimensiones y una propiedad entera `type`
+que identifica el único tipo de producto admitido. Comienzan vacías y son
+obstáculos fijos: no pueden levantarse ni colocarse cajas encima.
+
+`Product(product_type, name="")` describe un tipo de producto. Cada `Shelf`
+mantiene el producto almacenado y la cantidad disponible. `add(product, quantity=1)`
+agrega existencias y `remove(quantity=1)` las retira, devolviendo el producto.
+Los tipos incompatibles, cantidades no positivas y retiros superiores al stock
+se rechazan sin cambiar las existencias.
+
+Las repisas usan `assets/graphics/shelf.png`: el primer fotograma cuando están
+vacías y el segundo cuando tienen al menos una unidad. Al retirar la última
+unidad vuelve a mostrarse el primero. Los fotogramas se recortan con Gale y
+se escalan a las dimensiones indicadas por el mapa.
+
+Ejemplo de abastecimiento desde código:
+
+```python
+from src.world.Product import Product
+
+shelf = room.shelves[0]
+shelf.add(Product(shelf.product_type, "Libro"), quantity=3)
+shelf.remove(quantity=1)
+```
+
+La interacción de jugadores para abastecer o retirar productos queda pendiente.
+
 ## Verificación
 
 Las pruebas utilizan eventos de teclado y eventos SDL con mandos simulados. Desde la raíz del proyecto,

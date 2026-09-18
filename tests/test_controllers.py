@@ -83,7 +83,15 @@ class ControllerTests(unittest.TestCase):
         self.move_choice(71, 1 if number == 1 else -1)
         self.button(71)
         self.assertIsInstance(self.game.state_machine.current, PlayState)
+        self.dismiss_dialog()
         return self.game.state_machine.current
+
+    def dismiss_dialog(self):
+        state = self.game.state_machine.current
+        if getattr(state, 'active_dialog', None):
+            self.key_tap(pygame.K_RETURN)
+            self.key_tap(pygame.K_RETURN)
+            self.game.update(0)
 
     def selection(self):
         self.button(71)
@@ -104,6 +112,7 @@ class ControllerTests(unittest.TestCase):
         self.button(71)
         self.button(203)
         self.assertIsInstance(self.game.state_machine.current, PlayState)
+        self.dismiss_dialog()
         return self.game.state_machine.current
 
     def test_join_requires_a_on_selection_and_ignores_releases(self):
@@ -243,7 +252,8 @@ class ControllerTests(unittest.TestCase):
             other.position.update(80, 128)
             for dx, dy, edge in ((-1, 0, 'left'), (1, 0, 'right'),
                                  (0, 1, 'bottom'), (0, -1, 'top')):
-                player.position.update(272, 240)
+                # La repisa de la pared izquierda ocupa el pasillo a Y = 240.
+                player.position.update(272, 320)
                 self.axis(player.controller_id, dx)
                 self.axis(player.controller_id, dy, pygame.CONTROLLER_AXIS_LEFTY)
                 self.game.update(100)
@@ -738,6 +748,26 @@ class ControllerTests(unittest.TestCase):
                     self.assertEqual(second.hitbox.right, state.room.walkable_area.right)
                 else:
                     self.assertEqual(second.hitbox.right, state.room.objects[0].hitbox.left)
+
+    def test_tiled_shelf_blocks_movement_placement_and_cannot_be_lifted(self):
+        state = self.play()
+        state.room.objects = []
+        shelf = state.room.shelves[0]
+        player = state.players[1]
+        player.position.update(shelf.hitbox.right + 80, shelf.hitbox.top)
+        self.axis(player.controller_id, -1)
+        self.game.update(1)
+        self.assertEqual(player.hitbox.left, shelf.hitbox.right)
+        self.assertFalse(player.hitbox.colliderect(shelf.hitbox))
+        self.assertFalse(state.room.try_lift(player))
+        self.assertIsNone(player.carrying)
+        player.stop()
+        player.lift(Box(96, 128, 'small'))
+        player.lift_elapsed = settings.POT_LIFT_DURATION
+        target = state.room.placement_target(player)
+        self.assertTrue(target.colliderect(shelf.hitbox))
+        self.assertFalse(state.room.try_put_down(player, state.players.values()))
+        self.game._Game__render()
 
     def test_boxes_block_every_direction_without_tunneling(self):
         state = self.play()
