@@ -8,6 +8,7 @@ import settings
 from src.gui.Menu import draw_text
 from src.world.Room import Room
 from src.gui.FloatingDialog import FloatingDialog
+from src.states.game.PauseState import PauseState
 
 
 class PlayState(BaseState):
@@ -84,14 +85,21 @@ class PlayState(BaseState):
             player.stop()
             player.clear_carrying()
 
+    def reset_input(self) -> None:
+        for player in self.players.values():
+            player.direction.update(0, 0)
+            player.keyboard_keys.clear()
+            player.interact_held = False
+            player.interact_requested = False
+
     def on_input(self, input_id, input_data) -> None:
+        if input_id in ("back", "pad_pause") and input_data.pressed:
+            self.state_machine.push(PauseState(self.state_machine, self.game), play_state=self)
+            return
         if getattr(self, "active_dialog", None):
             self.active_dialog.on_input(input_id, input_data)
             return
 
-        if input_id == "back" and input_data.pressed:
-            self.state_machine.change("main_menu")
-            return
         for player in self.players.values():
             player.on_input(input_id, input_data)
 

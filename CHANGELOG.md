@@ -9,6 +9,10 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Added
 
+- Pausa con `Esc` o Start del mando mediante una pila de estados de Gale,
+  con panel semitransparente y botones para continuar o volver al menú principal.
+- Reloj, personajes y diálogos detenidos durante la pausa, conservando la
+  jornada al continuar y limpiando las entradas pendientes.
 - Repisas en las zonas del almacén definidas por el mapa, dedicadas a un único
   tipo de producto y con control de existencias.
 - Apariencia de repisa vacía o abastecida según su contenido, con bloqueo del

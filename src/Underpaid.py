@@ -4,7 +4,7 @@ import pygame
 
 from gale.game import Game
 from gale.input_handler import InputData
-from gale.state import StateMachine
+from gale.timer import Timer
 
 import settings
 from src.states.game.MainMenuState import MainMenuState
@@ -12,12 +12,15 @@ from src.states.game.PlayState import PlayState
 from src.states.game.SettingsState import SettingsState
 from src.states.game.PlayerSelectState import PlayerSelectState
 from src.states.game.GameOverState import GameOverState
+from src.states.game.PauseState import PauseState
+from src.states.game.SceneStack import SceneStack
 from src.input.ControllerManager import ControllerManager
 
 
 class Underpaid(Game):
     def __init__(self, *args, **kwargs) -> None:
         self.closed = False
+        self.back_held = False
         try:
             super().__init__(*args, **kwargs)
         except Exception:
@@ -34,14 +37,22 @@ class Underpaid(Game):
         self.reset_score()
         if settings.FULLSCREEN:
             self.set_display(self.resolution_index, True)
-        self.state_machine = StateMachine({
+        self.state_stack = SceneStack({
             "main_menu": lambda sm: MainMenuState(sm, self),
             "settings": lambda sm: SettingsState(sm, self),
             "play": lambda sm: PlayState(sm, self),
             "player_select": lambda sm: PlayerSelectState(sm, self),
             "game_over": lambda sm: GameOverState(sm, self),
-        })
+        }, self.update_timer_state)
+        # Las escenas conservan su API de transiciones por nombre.
+        self.state_machine = self.state_stack
         self.state_machine.change("main_menu")
+
+    def update_timer_state(self) -> None:
+        if isinstance(self.state_stack.current, PlayState):
+            Timer.resume()
+        else:
+            Timer.pause()
 
     def reset_score(self) -> None:
         self.stars = settings.MAX_STARS
@@ -102,18 +113,22 @@ class Underpaid(Game):
 
     def update(self, dt: float) -> None:
         self.controllers.refresh()
-        self.state_machine.update(dt)
+        self.state_stack.update(dt)
 
     def render(self, surface: pygame.Surface) -> None:
-        self.state_machine.render(surface)
+        self.state_stack.render(surface)
 
     def on_input(self, input_id: str, input_data: InputData) -> None:
+        if input_id == "back":
+            if input_data.pressed and self.back_held:
+                return
+            self.back_held = input_data.pressed
         if input_id == "cancel" and isinstance(
-            self.state_machine.current, (MainMenuState, SettingsState, GameOverState)
+            self.state_machine.current, (MainMenuState, SettingsState, GameOverState, PauseState)
         ):
             input_id = "back"
         if input_id.startswith("keyboard_") and isinstance(
-            self.state_machine.current, (MainMenuState, SettingsState, GameOverState)
+            self.state_machine.current, (MainMenuState, SettingsState, GameOverState, PauseState)
         ):
             input_id = input_id.removeprefix("keyboard_")
         if input_id.startswith("pad_"):
@@ -122,26 +137,28 @@ class Underpaid(Game):
                 return
             # Los menús usan cruceta/A/B; selección y partida reciben el ID
             # original para conservar la propiedad de cada personaje.
-            if isinstance(self.state_machine.current, (MainMenuState, SettingsState, GameOverState)):
+            if isinstance(self.state_machine.current, (MainMenuState, SettingsState, GameOverState, PauseState)):
                 input_id = {
                     "pad_a": "confirm", "pad_b": "back",
                     "pad_up": "up", "pad_down": "down",
                     "pad_left": "left", "pad_right": "right",
+                    "pad_pause": "back",
                 }.get(input_id)
                 if input_id is None:
                     return
-        self.state_machine.on_input(input_id, input_data)
+        self.state_stack.on_input(input_id, input_data)
 
     def quit(self) -> None:
         if self.closed:
             return
         self.closed = True
         try:
-            if hasattr(self, "state_machine"):
-                self.state_machine.current.exit()
+            if hasattr(self, "state_stack"):
+                self.state_stack.clear()
         finally:
             if hasattr(self, "controllers"):
                 self.controllers.close()
+            Timer.resume()
             super().quit()
 
     def exec(self) -> None:

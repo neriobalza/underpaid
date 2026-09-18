@@ -225,6 +225,7 @@ InputHandler.set_mouse_motion_action(None, "mouse_move")
 for button, action in (
     (pygame.CONTROLLER_BUTTON_A, "pad_a"),
     (pygame.CONTROLLER_BUTTON_B, "pad_b"),
+    (pygame.CONTROLLER_BUTTON_START, "pad_pause"),
     (pygame.CONTROLLER_BUTTON_DPAD_UP, "pad_up"),
     (pygame.CONTROLLER_BUTTON_DPAD_DOWN, "pad_down"),
     (pygame.CONTROLLER_BUTTON_DPAD_LEFT, "pad_left"),

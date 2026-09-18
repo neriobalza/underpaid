@@ -43,7 +43,7 @@ Puedes iniciar en pantalla completa configurando `FULLSCREEN = True` en `setting
 - Enter o Espacio: activar la opción seleccionada.
 - Flechas izquierda/derecha o A/D: cambiar la resolución o el modo seleccionado.
 - Ratón: seleccionar y activar opciones; pulsar la resolución recorre la lista.
-- Esc: volver al menú desde configuración o desde la partida.
+- Esc: volver desde configuración; pausar o continuar durante la partida.
 - Salir: cerrar el juego desde el menú principal.
 
 ## Archivos principales
@@ -139,6 +139,14 @@ su reloj; una nueva partida comienza a las **8:00 AM**.
 definen el horario y la velocidad del reloj; `MATCH_DURATION` calcula la duración
 en segundos reales.
 
+## Pausa
+
+Durante la partida, **Esc** o **Start** del mando abren un panel semitransparente
+sobre el almacén. El reloj, los personajes y los diálogos se detienen hasta continuar.
+El botón **Continuar** (o Esc, Start o B) recupera la misma jornada, sin reiniciar
+el tiempo ni los objetos. **Menú principal** abandona la jornada y cancela su reloj.
+Los botones admiten teclado, ratón y cruceta/A del mando.
+
 ## Puntuación y derrota
 
 El prototipo comienza con **5 estrellas**. La zona de despacho es el rectángulo
@@ -161,8 +169,12 @@ de nuevo se reinicia la jornada, manteniendo la puntuación de la sesión.
 
 `Underpaid` hereda de `gale.game.Game`, que controla el bucle, escala la superficie
 virtual, despacha las entradas y actualiza `Timer` una sola vez por frame. Las
-cinco escenas heredan de `BaseState` y se crean con fábricas de `StateMachine`.
-El reloj se cancela en `PlayState.exit()`, incluso al cerrar la ventana.
+escenas heredan de `BaseState` y usan `SceneStack`, una extensión de
+`gale.state.StateStack` con transiciones por nombre. La pausa se apila sobre
+`PlayState`: sólo el estado superior recibe actualizaciones y entradas, mientras
+ambos se dibujan. `Timer` se pausa inmediatamente al dejar de estar en juego y se
+reanuda al continuar. El reloj se cancela en `PlayState.exit()`, incluso al cerrar
+la ventana con la partida pausada.
 
 `ControllerManager` llama a `InputHandler.init_gamepads()` al iniciar, conserva
 los controladores SDL para recibir eventos `CONTROLLER*` y reconcilia los IDs de
