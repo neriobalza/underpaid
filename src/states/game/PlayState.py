@@ -149,13 +149,18 @@ class PlayState(BaseState):
                 key = "Enter" if player.uses_keyboard else "A"
                 lines = [f"{key}: {hint}"]
                 action, target = self.room.next_action(player)
+                if action == "unload":
+                    quantity = player.carrying.contents[target.product_type]
+                    lines.append(f"1 unidad por pulsación · En la caja: {quantity}")
                 box = player.carrying if player.carrying is not None and player.carrying.is_order else None
                 if action in ("pack", "take_table_box", "box_full"):
                     box = target.box
                 if box is not None and box.quantity:
                     lines += [f"{settings.PRODUCT_NAMES[product_type]} × {quantity}"
                               for product_type, quantity in sorted(box.contents.items())]
-                images = [self.game.fonts["small"].render(line, True, settings.TEXT_COLOR) for line in lines]
+                images = [self.game.fonts["small"].render(
+                    line, True, settings.ACCENT_COLOR if action == "unload" and index == 0 else settings.TEXT_COLOR,
+                ) for index, line in enumerate(lines)]
                 line_height = self.game.fonts["small"].get_linesize()
                 rect = pygame.Rect(0, 0, max(image.get_width() for image in images), len(images) * line_height)
                 rect.midbottom = round(player.position.x), round(player.position.y) - 38

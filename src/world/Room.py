@@ -243,6 +243,8 @@ class Room:
 
     def interaction_hint(self, player) -> str:
         action, target = self.next_action(player)
+        if action == "unload":
+            return f"Descargar {settings.PRODUCT_NAMES[target.product_type]} en esta repisa"
         if action == "take_product":
             return f"Tomar {settings.PRODUCT_NAMES[target.product_type]}"
         if action == "return_product":
@@ -252,7 +254,7 @@ class Room:
         if action == "new_box":
             return "Tomar caja mediana" if target.box_type == "medium" else "Tomar caja pequeña"
         return {
-            "unload": "Descargar productos", "put_table": "Colocar caja en mesa",
+            "put_table": "Colocar caja en mesa",
             "pack": "Empacar", "take_table_box": "Levantar caja",
             "take_box": "Levantar caja", "put_down": "Colocar caja",
             "box_full": "Caja llena: devuelve productos",
@@ -317,9 +319,11 @@ class Room:
             if player.carrying is None:
                 continue
             target = self.placement_target(player)
-            action, table = self.next_action(player)
-            if action == "put_table":
-                target = self.table_target(table, player.carrying)
+            action, target_object = self.next_action(player)
+            if action == "unload":
+                color = settings.PLACEMENT_UNLOAD_COLOR
+            elif action == "put_table":
+                target = self.table_target(target_object, player.carrying)
                 color = settings.PLACEMENT_VALID_COLOR
             else:
                 color = (settings.PLACEMENT_VALID_COLOR if self.can_place(player, target, players)

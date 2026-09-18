@@ -160,7 +160,8 @@ el reloj continúa avanzando. Ambos jugadores pueden colaborar con cualquier ped
 1. Levanta una caja grande de la zona gris de descarga. Las cajas contienen
    exactamente los productos necesarios para los cuatro pedidos.
 2. Colócate frente a la repisa del producto que contiene la caja. Cuando aparezca
-   **Descargar productos**, pulsa Enter/A para transferir **una unidad por pulsación**.
+   **Enter/A: Descargar [producto] en esta repisa**, pulsa el botón indicado para transferir
+   **una unidad por pulsación**. El aviso muestra cuántas unidades de ese producto quedan en la caja.
    No se pueden tomar productos directamente de las cajas grandes. Al vaciarse, desaparecen.
 3. Toma una caja vacía de los puestos: **pequeña para 2 o 3 productos**,
    **mediana para 4 o 5**. Cada caja respeta esa capacidad máxima.
@@ -256,7 +257,8 @@ de tiles de 32 × 32 píxeles. Las pequeñas se alinean a una cuadrícula de
 16 × 16: caben cuatro en un tile, distribuidas en dos filas y dos columnas.
 Muévete frente a la subcasilla que quieres ocupar antes de colocarla.
 Sólo se muestra el área que ocupa la caja en la dirección que miras mientras cargas: verde si
-puedes colocarla y roja si está bloqueada o todavía estás levantándola.
+puedes colocarla, amarilla cuando puedes descargar productos en la repisa y roja
+si está bloqueada o todavía estás levantándola.
 Si hay una pared, otra caja o un jugador en ese lugar, conservas
 la caja sobre la cabeza hasta encontrar espacio. Al colocarla vuelve a bloquear
 el paso y cualquiera de los dos jugadores puede levantarla de nuevo.

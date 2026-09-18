@@ -39,6 +39,10 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Changed
 
+- Aviso de descarga más claro: muestra el producto, la repisa de destino, el
+  botón de acción y las unidades restantes, indicando una unidad por pulsación.
+- La cuadrícula se muestra en amarillo sólo cuando se pueden descargar productos
+  en una repisa; las posiciones de colocación bloqueadas conservan el rojo.
 - Las entregas requieren el tamaño de caja y las cantidades exactas de cada
   producto: un pedido correcto suma 100 puntos y un paquete incorrecto resta 50.
 - Las cajas pequeñas admiten hasta tres productos y las medianas hasta cinco.

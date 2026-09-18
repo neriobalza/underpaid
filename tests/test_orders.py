@@ -94,7 +94,8 @@ class OrderTests(unittest.TestCase):
                 shelf = next(shelf for shelf in self.room.shelves if shelf.product_type == product_type)
                 self.face(shelf)
                 for _ in range(quantity):
-                    self.assertEqual(self.room.interaction_hint(self.player), "Descargar productos")
+                    self.assertEqual(self.room.interaction_hint(self.player),
+                                     f"Descargar {settings.PRODUCT_NAMES[product_type]} en esta repisa")
                     self.act()
         self.assertEqual(self.room.objects, [])
 
@@ -172,13 +173,21 @@ class OrderTests(unittest.TestCase):
         shelf = self.room.shelves[0]
         self.face(shelf)
         quantity = box.contents[0]
+        preview = pygame.Surface((640, 480), pygame.SRCALPHA)
+        self.room.render_placement(preview, self.play.players.values())
+        self.assertEqual(preview.get_at(self.room.placement_target(self.player).topleft)[:3],
+                         settings.PLACEMENT_UNLOAD_COLOR)
         self.act()
         self.assertEqual(shelf.quantity, 1)
         self.assertEqual(box.contents[0], quantity - 1)
         self.assertIsNone(self.player.held_product)
         wrong = next(shelf for shelf in self.room.shelves if not box.contents.get(shelf.product_type))
         self.face(wrong)
-        self.assertNotEqual(self.room.interaction_hint(self.player), "Descargar productos")
+        self.assertNotEqual(self.room.next_action(self.player)[0], "unload")
+        preview.fill((0, 0, 0, 0))
+        self.room.render_placement(preview, self.play.players.values())
+        self.assertEqual(preview.get_at(self.room.placement_target(self.player).topleft)[:3],
+                         settings.PLACEMENT_INVALID_COLOR)
         self.assertEqual(wrong.quantity, 0)
         self.assertEqual(self.total_inventory(), initial)
 
