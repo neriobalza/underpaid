@@ -19,6 +19,7 @@ class GameOverState(BaseState):
         self.points = points
         items = []
         if self.game.stars > 0:
+            self.game.play_music("win", loops=0, intro_loop=False)
             items.append(("Siguiente jornada", self.next_day))
         items.append(("Menú principal", lambda: self.state_machine.change("main_menu")))
         self.menu = Menu(self.game, items, y=310)

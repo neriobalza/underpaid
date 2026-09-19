@@ -17,7 +17,12 @@ class PlayState(BaseState):
         super().__init__(state_machine)
         self.game = game
 
-    def enter(self, players) -> None:
+    def enter(self, players, **kwargs) -> None:
+        if self.game.day == 0:
+            self.game.play_music("soft")
+        else:
+            self.game.play_music("playing")
+            
         self.players = dict(players)
         if set(self.players) != {1, 2} or any(
             player.number != number for number, player in self.players.items()

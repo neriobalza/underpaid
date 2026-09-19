@@ -112,9 +112,30 @@ class Underpaid(Game):
             int(y * self.virtual_height / height),
         )
 
+    def play_music(self, name: str, loops: int = -1, intro_loop: bool = True) -> None:
+        if getattr(self, "current_music", None) == name:
+            return
+        self.current_music = name
+        
+        if intro_loop:
+            self.music_looping = False
+            pygame.mixer.music.load(f"assets/sounds/{name}_intro.mp3")
+            pygame.mixer.music.play(loops=0)
+        else:
+            self.music_looping = True
+            pygame.mixer.music.load(f"assets/sounds/{name}.mp3")
+            pygame.mixer.music.play(loops=loops)
+
     def update(self, dt: float) -> None:
         if self.closed:
             return
+            
+        if getattr(self, "current_music", None) and not getattr(self, "music_looping", False):
+            if not pygame.mixer.music.get_busy():
+                pygame.mixer.music.load(f"assets/sounds/{self.current_music}_loop.mp3")
+                pygame.mixer.music.play(loops=-1)
+                self.music_looping = True
+                
         self.controllers.refresh()
         self.state_stack.update(dt)
 

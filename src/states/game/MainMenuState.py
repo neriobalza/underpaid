@@ -12,6 +12,7 @@ class MainMenuState(BaseState):
         self.game = game
 
     def enter(self) -> None:
+        self.game.play_music("soft")
         self.menu = Menu(self.game, [
             ("Jugar", self.game.start_game),
             ("Configuración", lambda: self.state_machine.change("settings")),
