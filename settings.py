@@ -37,7 +37,15 @@ TEXT_COLOR = (235, 238, 245)
 MUTED_COLOR = (164, 174, 194)
 ACCENT_COLOR = (246, 190, 76)
 
-PLAYER_COLORS = {1: (82, 169, 255), 2: (255, 116, 128)}
+PLAYER_COLORS = {1: (255, 116, 128), 2: (82, 169, 255)}
+PLAYER_WALK_SPRITES = {
+    1: "player_walk.png",
+    2: "player2_walk2.png",
+}
+PLAYER_CARRY_SPRITES = {
+    1: "player_pot_walk.png",
+    2: "player2_pot_walk2.png",
+}
 PLAYER_SPEED = 180
 PLAYER_FRAME_WIDTH = 32
 PLAYER_FRAME_HEIGHT = 64
@@ -161,7 +169,7 @@ def load_room_tileset() -> Tileset:
     return Tileset(sheet, TILE_RENDER_SIZE, TILE_RENDER_SIZE)
 
 
-@lru_cache(maxsize=2)
+@lru_cache(maxsize=4)
 def load_player_frames(filename: str = "player_walk.png") -> dict[str, tuple[pygame.Surface, ...]]:
     """Carga una vez el spritesheet; cada jugador conserva su propio reloj."""
     sheet = pygame.image.load(BASE_DIR / "assets" / "graphics" / filename).convert_alpha()

@@ -477,6 +477,30 @@ class ControllerTests(unittest.TestCase):
             expected = sheet.subsurface(pygame.Rect(32, row * 64, 32, 64))
             self.assertEqual(pygame.image.tobytes(frame, 'RGBA'), pygame.image.tobytes(expected, 'RGBA'))
 
+    def test_player_two_uses_its_walk_and_carry_sprites(self):
+        player = Player("keyboard2")
+        player.select(2)
+        walk_sheet = pygame.image.load(
+            settings.BASE_DIR / "assets" / "graphics" / "player2_walk2.png"
+        )
+        expected_walk = walk_sheet.subsurface(pygame.Rect(0, 0, 32, 64))
+        self.assertEqual(
+            pygame.image.tobytes(player.animation.get_current_frame(), "RGBA"),
+            pygame.image.tobytes(expected_walk, "RGBA"),
+        )
+
+        player.lift(Box(0, 0, "small"))
+        carry_sheet = pygame.image.load(
+            settings.BASE_DIR / "assets" / "graphics" / "player2_pot_walk2.png"
+        )
+        expected_carry = carry_sheet.subsurface(pygame.Rect(0, 0, 32, 64))
+        self.assertEqual(
+            pygame.image.tobytes(player.animation.get_current_frame(), "RGBA"),
+            pygame.image.tobytes(expected_carry, "RGBA"),
+        )
+        self.assertEqual(settings.PLAYER_COLORS[1], (255, 116, 128))
+        self.assertEqual(settings.PLAYER_COLORS[2], (82, 169, 255))
+
     def test_enter_registers_keyboard_once_and_space_does_not_register(self):
         self.devices.clear()
         self.key_tap(pygame.K_RETURN)  # Open selection from main menu.

@@ -31,15 +31,7 @@ class Player:
                     release=SetMovementDirection(action, False)
                 )
         self.facing = "down"
-        self.animations = {
-            direction: Animation(frames, settings.PLAYER_FRAME_INTERVAL)
-            for direction, frames in settings.load_player_frames().items()
-        }
-        self.animation = self.animations[self.facing]
-        self.carry_animations = {
-            direction: Animation(frames, settings.PLAYER_FRAME_INTERVAL)
-            for direction, frames in settings.load_player_frames("player_pot_walk.png").items()
-        }
+        self._load_animations(1)
         self.carrying = None
         self.held_product = None
         self.lift_elapsed = 0.0
@@ -47,6 +39,21 @@ class Player:
         self.interact_held = False
         self.interact_requested = False
         self.salary = 200
+
+    def _load_animations(self, number: int) -> None:
+        self.animations = {
+            direction: Animation(frames, settings.PLAYER_FRAME_INTERVAL)
+            for direction, frames in settings.load_player_frames(
+                settings.PLAYER_WALK_SPRITES[number]
+            ).items()
+        }
+        self.animation = self.animations[self.facing]
+        self.carry_animations = {
+            direction: Animation(frames, settings.PLAYER_FRAME_INTERVAL)
+            for direction, frames in settings.load_player_frames(
+                settings.PLAYER_CARRY_SPRITES[number]
+            ).items()
+        }
 
     @property
     def uses_keyboard(self) -> bool:
@@ -75,6 +82,7 @@ class Player:
         if number not in (1, 2):
             raise ValueError("Sólo existen los jugadores 1 y 2")
         self.number = number
+        self._load_animations(number)
         self.position.update(settings.VIRTUAL_WIDTH * (0.25 if number == 1 else 0.75), 260)
         self.stop()
 
@@ -85,6 +93,7 @@ class Player:
 
     def unselect(self) -> None:
         self.number = None
+        self._load_animations(1)
         self.stop()
 
     def lift(self, obj) -> None:

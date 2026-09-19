@@ -111,8 +111,10 @@ Al desconectar un mando se vuelve a selección, conservando el jugador conectado
 dejando libre el lado del desconectado. Un mando reconectado debe pulsar A y elegir
 el lado libre y confirmarlo con A.
 
-Ambos jugadores utilizan `assets/graphics/player_walk.png`, con fotogramas de
-32 × 64 píxeles y cuatro fotogramas por dirección. Caminan mirando en la dirección
+El Jugador 1 utiliza `assets/graphics/player_walk.png` y está identificado en rojo;
+el Jugador 2 utiliza `assets/graphics/player2_walk2.png` y está identificado en azul.
+Ambos sprites tienen fotogramas de 32 × 64 píxeles y cuatro fotogramas por dirección.
+Caminan mirando en la dirección
 del movimiento y permanecen quietos mirando hacia su última dirección al detenerse.
 Cada jugador mantiene su propio estado de animación. `PLAYER_FRAME_INTERVAL` en
 `settings.py` permite ajustar la duración de cada fotograma.
@@ -260,8 +262,9 @@ Mientras carga, la velocidad es de **90 píxeles/s con una caja grande**,
 (la velocidad normal). Colocar la caja restaura la velocidad normal.
 Estos límites se aplican también a las diagonales; el joystick conserva
 el movimiento proporcional a su inclinación.
-Al cargar, el personaje utiliza `assets/graphics/player_pot_walk.png` para caminar
-con los brazos levantados. Cada jugador mantiene su propia animación de carga.
+Al cargar, el Jugador 1 utiliza `assets/graphics/player_pot_walk.png` y el Jugador 2
+utiliza `assets/graphics/player2_pot_walk2.png` para caminar con los brazos levantados.
+Cada jugador mantiene su propia animación de carga.
 
 Mientras cargas una caja, pulsa **A o Enter de nuevo** para colocarla en el suelo
 delante del personaje. Las cajas medianas y grandes se alinean a la cuadrícula
