@@ -269,7 +269,7 @@ class PlayState(BaseState):
             
             if not self.show_orders_panel:
                 action, target = self.room.next_action(player)
-                if action == "unload":
+                if action in ("unload", "return_contents"):
                     quantity = player.carrying.contents[target.product_type]
                     lines.append(f"En la caja: {quantity}")
                     
@@ -282,7 +282,7 @@ class PlayState(BaseState):
 
             if lines:
                 images = [self.game.fonts["small"].render(
-                    line, True, settings.ACCENT_COLOR if action == "unload" and index == 0 else settings.TEXT_COLOR,
+                    line, True, settings.ACCENT_COLOR if action in ("unload", "return_contents") and index == 0 else settings.TEXT_COLOR,
                 ) for index, line in enumerate(lines)]
                 line_height = self.game.fonts["small"].get_linesize()
                 rect = pygame.Rect(0, 0, max(image.get_width() for image in images), len(images) * line_height)
@@ -290,6 +290,8 @@ class PlayState(BaseState):
                 rect.clamp_ip(pygame.Rect(4, settings.CLOCK_BAR_HEIGHT + 4,
                                          settings.VIRTUAL_WIDTH - 8, settings.VIRTUAL_HEIGHT - settings.CLOCK_BAR_HEIGHT - 8))
                 pygame.draw.rect(surface, settings.PANEL_COLOR, rect.inflate(8, 4), border_radius=4)
+                if action in ("unload", "return_contents"):
+                    pygame.draw.rect(surface, settings.ACCENT_COLOR, rect.inflate(8, 4), width=1, border_radius=4)
                 for index, image in enumerate(images):
                     surface.blit(image, (rect.x, rect.y + index * line_height))
                     

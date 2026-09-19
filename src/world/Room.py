@@ -348,7 +348,7 @@ class Room:
                 continue
             target = self.placement_target(player)
             action, target_object = self.next_action(player)
-            if action == "unload":
+            if action in ("unload", "return_contents"):
                 color = settings.PLACEMENT_UNLOAD_COLOR
             elif action == "put_table":
                 target = self.table_target(target_object, player.carrying)
