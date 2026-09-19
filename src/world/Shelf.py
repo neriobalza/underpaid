@@ -8,7 +8,7 @@ from src.world.Product import Product
 
 class Shelf:
     def __init__(self, x: float, y: float, product_type: int,
-                 width: int = 32, height: int = 64) -> None:
+                 width: int = 64, height: int = 64) -> None:
         Product(product_type)
         if width <= 0 or height <= 0 or int(width) != width or int(height) != height:
             raise ValueError("Las dimensiones de la repisa deben ser píxeles enteros positivos")

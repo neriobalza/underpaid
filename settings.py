@@ -156,9 +156,9 @@ def load_table_sprite() -> pygame.Surface:
 def load_shelf_frames() -> tuple[pygame.Surface, ...]:
     """Primer sprite: repisa vacía; segundo: repisa con productos."""
     sheet = pygame.image.load(BASE_DIR / "assets" / "graphics" / "shelf.png").convert_alpha()
-    frames = generate_frames(sheet, 32, 64)
+    frames = generate_frames(sheet, 64, 64)
     if len(frames) < 2:
-        raise ValueError("El spritesheet de repisas requiere al menos dos sprites de 32 × 64")
+        raise ValueError("El spritesheet de repisas requiere al menos dos sprites de 64 × 64")
     return tuple(sheet.subsurface(rect).copy() for rect in frames[:2])
 
 
