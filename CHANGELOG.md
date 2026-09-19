@@ -14,6 +14,9 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 - Menú principal con el almacén como fondo y un empleado animado que recoge
   productos, prepara cajas en la mesa y las lleva a despacho.
 - Panel de inicio semitransparente con título, botones y guía de controles.
+- Rediseño del panel de pedidos (`OrdersPanel`) para agrupar las entregas según su camión y ordenarlas cronológicamente con sus respectivas horas de salida.
+- Soporte para música de fondo en `Underpaid` (`play_music`) con empalme automático y libre de interrupciones entre archivos `_intro` y `_loop` monitoreando el estado del mezclador.
+- Inserción de la banda sonora: *Soft* en el menú inicial y tutorial, *Playing* para el bucle principal de niveles, y reproducción única de *Win* al sobrevivir a la jornada con estrellas restantes.
 - **Nivel Tutorial (Día 0):** Implementación completa mediante patrón Strategy (`TutorialSchedule`), un nivel interactivo impulsado por diálogos y condiciones secuenciales sin reloj de partida, enseñando a moverse, descargar ítems de cajas grandes al estante, empaquetar órdenes exactas en mesas y despacharlas.
 - Cajas de prueba para el Tutorial con posiciones, tamaños y productos fijos asegurando el recorrido guiado.
 - Sistema unificado de deducción de salario: se restan y acumulan 5¢ en animaciones flotantes ("-5¢") sobre el responsable por cada pedido enviado erróneamente, o sobre un jugador al azar si un pedido se escapa en el camión sin ser entregado.

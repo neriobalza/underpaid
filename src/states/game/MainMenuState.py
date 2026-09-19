@@ -14,6 +14,7 @@ class MainMenuState(BaseState):
         self.game = game
 
     def enter(self) -> None:
+        self.game.play_music("soft")
         self.preview = WarehousePreview()
         self.panel = pygame.Rect(24, 64, 264, 350)
         self.title = pygame.font.Font(None, 48).render("UNDERPAID", True, settings.ACCENT_COLOR)
