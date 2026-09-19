@@ -39,6 +39,11 @@ Puedes iniciar en pantalla completa configurando `FULLSCREEN = True` en `setting
 
 ## Controles
 
+El menú principal muestra el mapa del almacén con un empleado que prepara y
+transporta cajas de fondo. La animación tiene su propia escena; la partida y
+el tutorial empiezan al elegir **Jugar**. El panel semitransparente reúne las
+opciones **Jugar**, **Configuración** y **Salir**.
+
 - Flechas arriba/abajo o W/S: seleccionar una opción.
 - Enter o Espacio: activar la opción seleccionada.
 - Flechas izquierda/derecha o A/D: cambiar la resolución o el modo seleccionado.

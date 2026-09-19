@@ -9,6 +9,9 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Added
 
+- Menú principal con el almacén como fondo y un empleado animado que recoge
+  productos, prepara cajas en la mesa y las lleva a despacho.
+- Panel de inicio semitransparente con título, botones y guía de controles.
 - **Nivel Tutorial (Día 0):** Implementación completa mediante patrón Strategy (`TutorialSchedule`), un nivel interactivo impulsado por diálogos y condiciones secuenciales sin reloj de partida, enseñando a moverse, descargar ítems de cajas grandes al estante, empaquetar órdenes exactas en mesas y despacharlas.
 - Cajas de prueba para el Tutorial con posiciones, tamaños y productos fijos asegurando el recorrido guiado.
 - Sistema unificado de deducción de salario: se restan y acumulan 5¢ en animaciones flotantes ("-5¢") sobre el responsable por cada pedido enviado erróneamente, o sobre un jugador al azar si un pedido se escapa en el camión sin ser entregado.

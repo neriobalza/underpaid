@@ -13,12 +13,12 @@ def draw_text(surface, text, font, y, color=None):
 
 
 class Menu:
-    def __init__(self, game, items: list[tuple[str, Callable[[], None]]], y=220):
+    def __init__(self, game, items: list[tuple[str, Callable[[], None]]], y=220, x=100, width=440):
         self.game = game
         self.items = items
         self.selected = 0
         self.rects = [
-            pygame.Rect(100, y + i * 56, 440, 44)
+            pygame.Rect(x, y + i * 56, width, 44)
             for i in range(len(items))
         ]
 
@@ -53,7 +53,7 @@ class Menu:
                 rect,
                 border_radius=8,
             )
-            draw_text(
-                surface, label, self.game.fonts["medium"], rect.centery,
-                settings.BACKGROUND_COLOR if selected else settings.TEXT_COLOR,
+            image = self.game.fonts["medium"].render(
+                label, True, settings.BACKGROUND_COLOR if selected else settings.TEXT_COLOR,
             )
+            surface.blit(image, image.get_rect(center=rect.center))
