@@ -13,12 +13,13 @@ def draw_text(surface, text, font, y, color=None):
 
 
 class Menu:
-    def __init__(self, game, items: list[tuple[str, Callable[[], None]]], y=220, x=100, width=440):
+    def __init__(self, game, items: list[tuple[str, Callable[[], None]]],
+                 y=220, x=100, width=440, height=44, spacing=56):
         self.game = game
         self.items = items
         self.selected = 0
         self.rects = [
-            pygame.Rect(x, y + i * 56, width, 44)
+            pygame.Rect(x, y + i * spacing, width, height)
             for i in range(len(items))
         ]
 

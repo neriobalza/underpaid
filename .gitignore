@@ -25,6 +25,10 @@ htmlcov/
 # Player save files (gale.save.SaveManager's default save_dir)
 07-ultimate_fantasy/saves/
 
+# Local tutorial progress
+tutorial_progress.txt
+tutorial_progress.txt.tmp
+
 # Editors / IDEs
 .vscode/
 .idea/

@@ -41,8 +41,10 @@ Puedes iniciar en pantalla completa configurando `FULLSCREEN = True` en `setting
 
 El menú principal muestra el mapa del almacén con un empleado que prepara y
 transporta cajas de fondo. La animación tiene su propia escena; la partida y
-el tutorial empiezan al elegir **Jugar**. El panel semitransparente reúne las
-opciones **Jugar**, **Configuración** y **Salir**.
+el tutorial empiezan al elegir **Jugar** la primera vez. Al completarlo, el
+progreso queda guardado en `tutorial_progress.txt`, las partidas siguientes
+comienzan en el día 1 y aparece la opción **Tutorial** para repetirlo. El panel
+semitransparente también reúne las opciones **Configuración** y **Salir**.
 
 - Flechas arriba/abajo o W/S: seleccionar una opción.
 - Enter o Espacio: activar la opción seleccionada.
@@ -64,6 +66,7 @@ opciones **Jugar**, **Configuración** y **Salir**.
 - `src/entity/Player.py`: personaje y vínculo exclusivo con su mando o teclado.
 - `src/input/ControllerManager.py`: inicialización de mandos y detección de conexiones.
 - `src/input/commands.py`: comandos de movimiento del teclado con Gale.
+- `src/TutorialProgress.py`: lectura y guardado local de la finalización del tutorial.
 - `src/states/game/GameOverState.py`: resumen diario y condición de derrota.
 
 ## Dos jugadores

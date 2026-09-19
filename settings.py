@@ -50,6 +50,7 @@ SELECTION_THRESHOLD = 0.6
 KEYBOARD_INPUT = "keyboard"
 
 BASE_DIR = Path(__file__).resolve().parent
+TUTORIAL_PROGRESS_PATH = BASE_DIR / "tutorial_progress.txt"
 
 # La sala reutiliza los tiles e IDs de 06-princess, a escala 2:1.
 TILE_SIZE = 16

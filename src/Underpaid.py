@@ -15,12 +15,17 @@ from src.states.game.GameOverState import GameOverState
 from src.states.game.PauseState import PauseState
 from src.states.game.SceneStack import SceneStack
 from src.input.ControllerManager import ControllerManager
+from src.TutorialProgress import TutorialProgress
 
 
 class Underpaid(Game):
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args, tutorial_progress_path=None, **kwargs) -> None:
         self.closed = False
         self.back_held = False
+        progress_path = tutorial_progress_path or settings.TUTORIAL_PROGRESS_PATH
+        self.tutorial_progress = TutorialProgress(progress_path)
+        self.tutorial_completed = self.tutorial_progress.load()
+        self.tutorial_progress_error = None
         try:
             super().__init__(*args, **kwargs)
         except Exception:
@@ -62,7 +67,22 @@ class Underpaid(Game):
 
     def start_game(self) -> None:
         self.reset_score()
+        if self.tutorial_completed:
+            self.day = 1
         self.state_machine.change("player_select")
+
+    def start_tutorial(self) -> None:
+        self.reset_score()
+        self.state_machine.change("player_select")
+
+    def mark_tutorial_completed(self) -> None:
+        self.tutorial_completed = True
+        self.tutorial_progress_error = None
+        try:
+            self.tutorial_progress.save_completed()
+        except OSError as error:
+            # La partida puede terminar aunque el sistema no permita escribir.
+            self.tutorial_progress_error = str(error)
 
     def set_resolution(self, index: int) -> None:
         """Elige la resolución de ventana y conserva el modo actual."""

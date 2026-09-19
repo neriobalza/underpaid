@@ -9,6 +9,8 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Added
 
+- Persistencia local en `tutorial_progress.txt` para recordar que el tutorial
+  fue completado y una opción **Tutorial** en el menú para volver a jugarlo.
 - Menú principal con el almacén como fondo y un empleado animado que recoge
   productos, prepara cajas en la mesa y las lleva a despacho.
 - Panel de inicio semitransparente con título, botones y guía de controles.
@@ -64,6 +66,10 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Changed
 
+- El encabezado del menú principal ahora muestra el lema
+  “tlabaja, tiene que tlabajal”.
+- **Jugar** inicia el tutorial sólo en la primera partida; después comienza
+  directamente en la primera jornada con reloj.
 - Aviso de descarga más claro: muestra el producto, la repisa de destino, el
   botón de acción y las unidades restantes, indicando una unidad por pulsación.
 - La cuadrícula se muestra en amarillo sólo cuando se pueden descargar productos

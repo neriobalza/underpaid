@@ -102,6 +102,8 @@ class PlayState(BaseState):
             self.game.score += points
             if delivered < self.room.order_count:
                 self.game.stars = max(0, self.game.stars - 1)
+            if self.game.day == 0:
+                self.game.mark_tutorial_completed()
             self.state_machine.change("game_over", players=self.players, delivered=delivered,
                                       total=self.room.order_count, incorrect=len(incorrect), points=points)
 
@@ -124,7 +126,8 @@ class PlayState(BaseState):
             if player.interact_requested:
                 player.interact_requested = False
                 self.room.interact(player, self.players.values())
-        if self.room.order_count and self.room.count_deliveries() == self.room.order_count:
+        # El tutorial finaliza desde su último paso, después del diálogo de cierre.
+        if self.game.day > 0 and self.room.order_count and self.room.count_deliveries() == self.room.order_count:
             self._finish_match()
 
     def exit(self) -> None:
