@@ -69,6 +69,9 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Changed
 
+- La estrategia de cada jornada aumenta la dificultad sin reiniciar el mapa:
+  cada día añade un pedido por jugador y un camión de despacho respecto al día
+  anterior, repartiendo las nuevas órdenes entre todos sus horarios.
 - El encabezado del menú principal ahora muestra el lema
   “tlabaja, tiene que tlabajal”.
 - **Jugar** inicia el tutorial sólo en la primera partida; después comienza

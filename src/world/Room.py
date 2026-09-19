@@ -16,13 +16,20 @@ from src.world.Truck import Truck
 from src.world.DaySchedule import DaySchedule
 
 class Room:
-    def __init__(self, day: int) -> None:
+    def __init__(self, day: int = 1) -> None:
+        if type(day) is not int or day < 0:
+            raise ValueError("La sala requiere un número de día válido")
+        self.day = day
         self.delivered_orders = {}
         self.incorrect_boxes = []
         self.missed_orders = set()
         size = settings.TILE_RENDER_SIZE
         
+        # Usa un mapa específico si existe; las jornadas posteriores pueden
+        # reutilizar day1 y dejar que la estrategia aumente la dificultad.
         map_path = settings.BASE_DIR / "assets" / "tilemaps" / f"day{day}.json"
+        if day > 0 and not map_path.is_file():
+            map_path = settings.BASE_DIR / "assets" / "tilemaps" / "day1.json"
         self.tilemap = load_tiled_map(str(map_path))
         
         self.bounds = pygame.Rect(
@@ -122,7 +129,11 @@ class Room:
     def obstacles(self) -> list:
         return [obj for obj in self.objects if obj.table is None] + self.shelves + self.tables + self.dispensers
 
-    def start_day(self, day: int, play_state, rng=None) -> None:
+    def start_day(self, day: int | None = None, play_state=None, rng=None) -> None:
+        day = self.day if day is None else day
+        if type(day) is not int or day < 0:
+            raise ValueError("La jornada requiere un número de día válido")
+        self.day = day
         if len({shelf.product_type for shelf in self.shelves}) != len(settings.PRODUCT_NAMES):
             raise ValueError("El almacén requiere una repisa para cada uno de los cinco productos")
         if not self.tables or {station.box_type for station in self.dispensers} != {"small", "medium"}:
@@ -136,7 +147,7 @@ class Room:
             from src.world.TutorialSchedule import TutorialSchedule
             self.strategy = TutorialSchedule(self, play_state)
         else:
-            self.strategy = DaySchedule(self, rng)
+            self.strategy = DaySchedule(self, rng=rng, day=day)
             
         self.on_dispatch_depart = None
 

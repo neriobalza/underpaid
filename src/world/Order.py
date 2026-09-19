@@ -38,9 +38,16 @@ class Order:
         return box.box_type == self.box_type and box.contents == self._requirements
 
 
-def generate_orders(rng=None, num_trucks: int = 1) -> list[Order]:
+def generate_orders(rng=None, num_trucks: int = 1,
+                    orders_per_player: int | None = None) -> list[Order]:
     rng = rng or random.Random()
-    total_orders = 2 * settings.ORDERS_PER_PLAYER
+    if orders_per_player is None:
+        orders_per_player = settings.ORDERS_PER_PLAYER
+    if type(orders_per_player) is not int or orders_per_player <= 0:
+        raise ValueError("La cantidad de pedidos por jugador debe ser positiva")
+    if type(num_trucks) is not int or num_trucks <= 0:
+        raise ValueError("La cantidad de camiones debe ser positiva")
+    total_orders = 2 * orders_per_player
     num_trucks = min(num_trucks, total_orders)
     
     truck_assignments = list(range(1, num_trucks + 1))
@@ -50,7 +57,7 @@ def generate_orders(rng=None, num_trucks: int = 1) -> list[Order]:
     
     orders = []
     for owner in (1, 2):
-        for _ in range(settings.ORDERS_PER_PLAYER):
+        for _ in range(orders_per_player):
             quantity = rng.randint(settings.ORDER_MIN_PRODUCTS, settings.ORDER_MAX_PRODUCTS)
             requirements = Counter(rng.randrange(len(settings.PRODUCT_NAMES)) for _ in range(quantity))
             truck_id = truck_assignments.pop()

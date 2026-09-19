@@ -198,8 +198,9 @@ duplicada o de tamaño inadecuado que esté en despacho resta **50 puntos** al f
 se puede corregir o retirar antes. Una caja sólo cumple un pedido. Si falta al menos uno,
 el almacén pierde una estrella; entregar todos los pedidos conserva las estrellas.
 El resumen permite empezar otra jornada mientras queden estrellas, sin límite de
-días ni de puntos. **Perder las cinco estrellas termina el juego**. Elegir Jugar
-desde el menú inicia una sesión nueva con cinco estrellas y cero puntos.
+días ni de puntos. Cada jornada añade un pedido por jugador y un camión de
+despacho respecto a la anterior. **Perder las cinco estrellas termina el juego**.
+Elegir Jugar desde el menú inicia una sesión nueva con cinco estrellas y cero puntos.
 
 Las cajas grandes representan la recepción de productos y no cuentan como pedidos
 entregados. Las animaciones de los camiones todavía no están implementadas. La desconexión de

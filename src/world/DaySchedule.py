@@ -9,15 +9,32 @@ from src.world.Box import Box
 import settings
 
 class DaySchedule:
-    def __init__(self, room, rng=None):
+    def __init__(self, room, rng=None, day: int = 1):
+        if type(day) is not int or day < 1:
+            raise ValueError("DaySchedule requiere un día de trabajo positivo")
         self.room = room
         self.rng = rng or random.Random()
+        self.day = day
         self.time = 0.0
         self.match_duration = settings.MATCH_DURATION
+
+        # La estrategia conserva el día 1 como base y escala sin un límite
+        # artificial mientras los jugadores mantengan sus estrellas.
+        self.orders_per_player = (
+            settings.ORDERS_PER_PLAYER
+            + (day - 1) * settings.ORDERS_PER_PLAYER_GROWTH
+        )
+        self.dispatch_truck_count = (
+            settings.DISPATCH_TRUCKS_DAY_ONE
+            + (day - 1) * settings.DISPATCH_TRUCKS_GROWTH
+        )
         
         # 1. Definir los tiempos de los camiones de despacho
         self.dispatch_trucks = []
-        num_dispatch_trucks = min(4, 2 * settings.ORDERS_PER_PLAYER)
+        num_dispatch_trucks = min(
+            self.dispatch_truck_count,
+            2 * self.orders_per_player,
+        )
         interval = self.match_duration / (num_dispatch_trucks + 1)
         
         for i in range(num_dispatch_trucks):
@@ -31,7 +48,11 @@ class DaySchedule:
         early_truck_ids = {t["id"] for t in self.dispatch_trucks if t["time"] <= mid_time + 5.0}
         
         # 2. Generar órdenes y separar requerimientos (Temprano vs Tarde)
-        self.orders = generate_orders(self.rng, num_trucks=num_dispatch_trucks)
+        self.orders = generate_orders(
+            self.rng,
+            num_trucks=num_dispatch_trucks,
+            orders_per_player=self.orders_per_player,
+        )
         
         early_totals = Counter()
         late_totals = Counter()
