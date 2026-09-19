@@ -35,7 +35,10 @@ class Order:
         return "medium" if self.quantity >= 4 else "small"
 
     def matches(self, box) -> bool:
-        return box.box_type == self.box_type and box.contents == self._requirements
+        return box.box_type == self.box_type and self.matches_contents(box)
+
+    def matches_contents(self, box) -> bool:
+        return getattr(box, "contents", None) == self._requirements
 
 
 def generate_orders(rng=None, num_trucks: int = 1,

@@ -71,6 +71,17 @@ class PlayState(BaseState):
         self.room.missed_orders.update(o.number for o in missed)
         
         penalties = {number: 0 for number in self.players}
+
+        orders = {order.number: order for order in self.room.orders}
+        for order_number, box in delivered.items():
+            order = orders.get(order_number)
+            if order is None or box.box_type == order.box_type:
+                continue
+            self.room.wrong_box_orders.add(order_number)
+            responsible = box.last_carrier_number
+            if responsible not in penalties:
+                responsible = random.choice(list(self.players.keys()))
+            penalties[responsible] += settings.WRONG_BOX_SALARY_PENALTY
         
         for box in incorrect:
             self.game.stars = max(0, self.game.stars - 0.05)

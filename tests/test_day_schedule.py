@@ -6,6 +6,7 @@ import unittest
 import math
 from collections import Counter
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
@@ -20,9 +21,10 @@ from src.entity.Player import Player
 from src.world.Room import Room
 from src.world.DaySchedule import DaySchedule
 from src.world.Box import Box
-from src.world.Order import generate_orders
+from src.world.Order import Order, generate_orders
 from src.states.game.PlayState import PlayState
 from src.input.ControllerManager import ControllerManager
+from src.gui.OrdersPanel import OrdersPanel
 
 
 class DayScheduleTests(unittest.TestCase):
@@ -106,6 +108,72 @@ class DayScheduleTests(unittest.TestCase):
             len(room.orders),
             2 * (settings.ORDERS_PER_PLAYER + 3 * settings.ORDERS_PER_PLAYER_GROWTH),
         )
+
+    def test_correct_contents_in_wrong_box_are_delivered_with_special_status(self):
+        room = SimpleNamespace()
+        schedule = DaySchedule(room, random.Random(4))
+        order = Order(1, 1, {0: 2}, truck_id=1)
+        schedule.orders = [order]
+        wrong_box = Box(0, 0, "medium", {0: 2})
+
+        delivered, incorrect, missed = schedule.evaluate_delivery([wrong_box], 1)
+
+        self.assertEqual(delivered, {1: wrong_box})
+        self.assertEqual(incorrect, [])
+        self.assertEqual(missed, [])
+
+        status_room = SimpleNamespace(
+            delivered_orders=delivered,
+            wrong_box_orders={1},
+            missed_orders=set(),
+        )
+        self.assertEqual(
+            OrdersPanel.status_parts(status_room, order),
+            (
+                ("ENTREGADO", settings.PLACEMENT_VALID_COLOR),
+                (" (CAJA INCORRECTA)", settings.PLACEMENT_INVALID_COLOR),
+            ),
+        )
+
+    def test_exact_box_has_priority_over_duplicate_with_wrong_type(self):
+        room = SimpleNamespace()
+        schedule = DaySchedule(room, random.Random(4))
+        order = Order(1, 1, {0: 2}, truck_id=1)
+        schedule.orders = [order]
+        wrong_box = Box(0, 0, "medium", {0: 2})
+        exact_box = Box(0, 0, "small", {0: 2})
+
+        delivered, incorrect, missed = schedule.evaluate_delivery(
+            [wrong_box, exact_box], 1,
+        )
+
+        self.assertEqual(delivered, {1: exact_box})
+        self.assertEqual(incorrect, [wrong_box])
+        self.assertEqual(missed, [])
+
+    def test_wrong_box_deducts_one_dollar_from_last_carrier(self):
+        order = Order(1, 1, {0: 2}, truck_id=1)
+        box = Box(0, 0, "medium", {0: 2})
+        box.last_carrier_number = 1
+        players = {
+            1: SimpleNamespace(salary=200),
+            2: SimpleNamespace(salary=200),
+        }
+        play = PlayState(SimpleNamespace(), SimpleNamespace(stars=5))
+        play.players = players
+        play.room = SimpleNamespace(
+            orders=[order], delivered_orders={}, wrong_box_orders=set(),
+            incorrect_boxes=[], missed_orders=set(),
+        )
+        play.spawn_penalty_text = Mock()
+
+        play.on_dispatch_depart({1: box}, [], [], [box])
+
+        self.assertEqual(play.room.delivered_orders, {1: box})
+        self.assertEqual(play.room.wrong_box_orders, {1})
+        self.assertEqual(players[1].salary, 100)
+        self.assertEqual(players[2].salary, 200)
+        play.spawn_penalty_text.assert_called_once_with(players[1], "-100¢")
 
     def test_dispatch_truck_penalizes_wrong_box(self):
         game = Underpaid()

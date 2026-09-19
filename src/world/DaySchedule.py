@@ -168,18 +168,28 @@ class DaySchedule:
         delivered = {}
         incorrect = []
         truck_orders = [o for o in self.orders if o.truck_id == truck_id]
-        
+
+        # Las cajas completamente correctas tienen prioridad. Así, una caja
+        # del tamaño equivocado no consume un pedido si también llegó la caja
+        # exacta para ese mismo contenido.
+        boxes_with_wrong_type = []
         for box in boxes:
-            if not box.is_order:
-                incorrect.append(box)
-                continue
-                
             order = next((order for order in truck_orders
                           if order.number not in delivered and order.matches(box)), None)
+            if order is None:
+                boxes_with_wrong_type.append(box)
+            else:
+                delivered[order.number] = box
+
+        # Si los productos y cantidades son exactos, el pedido se entrega aun
+        # cuando el tipo de caja sea incorrecto. PlayState aplica su penalidad.
+        for box in boxes_with_wrong_type:
+            order = next((order for order in truck_orders
+                          if order.number not in delivered and order.matches_contents(box)), None)
             if order is None:
                 incorrect.append(box)
             else:
                 delivered[order.number] = box
-                
+
         missed = [o for o in truck_orders if o.number not in delivered]
         return delivered, incorrect, missed

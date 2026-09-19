@@ -193,10 +193,13 @@ amarillo junto a la pared derecha. Coloca las cajas de pedidos (medianas y peque
 antes de las **4:00 PM**. Al finalizar la jornada se cuentan únicamente las cajas de pedidos
 en el suelo y completamente dentro de esa zona; cargar uno sobre la cabeza no lo entrega.
 
-Cada pedido válido suma **100 puntos** al finalizar. Cada caja incorrecta, vacía,
-duplicada o de tamaño inadecuado que esté en despacho resta **50 puntos** al finalizar;
+Cada pedido válido suma **100 puntos** al finalizar. Cada caja con contenido incorrecto,
+vacía o duplicada que esté en despacho resta **50 puntos** al finalizar;
 se puede corregir o retirar antes. Una caja sólo cumple un pedido. Si falta al menos uno,
 el almacén pierde una estrella; entregar todos los pedidos conserva las estrellas.
+Si los productos y cantidades son correctos pero el tipo de caja no, el pedido
+cuenta como entregado y conserva sus puntos, pero descuenta **$1 (100¢)** del
+sueldo del último personaje que transportó la caja.
 El resumen permite empezar otra jornada mientras queden estrellas, sin límite de
 días ni de puntos. Cada jornada añade un pedido por jugador y un camión de
 despacho respecto a la anterior. **Perder las cinco estrellas termina el juego**.

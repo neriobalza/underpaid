@@ -21,6 +21,7 @@ class Room:
             raise ValueError("La sala requiere un número de día válido")
         self.day = day
         self.delivered_orders = {}
+        self.wrong_box_orders = set()
         self.incorrect_boxes = []
         self.missed_orders = set()
         size = settings.TILE_RENDER_SIZE
@@ -140,6 +141,7 @@ class Room:
             raise ValueError("El almacén requiere mesas y dispensadores de cajas pequeñas y medianas")
             
         self.delivered_orders = {}
+        self.wrong_box_orders = set()
         self.incorrect_boxes = []
         self.missed_orders = set()
         

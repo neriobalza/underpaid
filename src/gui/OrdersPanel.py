@@ -12,6 +12,19 @@ class OrdersPanel:
         self.small_font = pygame.font.Font(None, 18)
         self.icons = tuple(pygame.transform.scale(image, (18, 18)) for image in settings.load_product_frames())
 
+    @staticmethod
+    def status_parts(room, order):
+        if order.number in room.delivered_orders:
+            if order.number in getattr(room, "wrong_box_orders", set()):
+                return (
+                    ("ENTREGADO", settings.PLACEMENT_VALID_COLOR),
+                    (" (CAJA INCORRECTA)", settings.PLACEMENT_INVALID_COLOR),
+                )
+            return (("ENTREGADO", settings.PLACEMENT_VALID_COLOR),)
+        if order.number in getattr(room, "missed_orders", set()):
+            return (("NO ENTREGADO", settings.PLACEMENT_INVALID_COLOR),)
+        return (("PENDIENTE", settings.TEXT_COLOR),)
+
     def render(self, surface, room, owner) -> None:
         rect = pygame.Rect(20, 30, 600, 420)
         panel = pygame.Surface(rect.size, pygame.SRCALPHA)
@@ -57,20 +70,21 @@ class OrdersPanel:
             
             for order in orders_by_truck[truck_id]:
                 done = order.number in delivered
-                is_missed = hasattr(room, "missed_orders") and order.number in room.missed_orders
-                
-                if done:
-                    status = "ENTREGADO"
-                    color = settings.PLACEMENT_VALID_COLOR
-                elif is_missed:
-                    status = "NO ENTREGADO"
-                    color = settings.PLACEMENT_INVALID_COLOR
-                else:
-                    status = "PENDIENTE"
-                    color = settings.TEXT_COLOR
-                    
                 size = "Mediana" if order.box_type == "medium" else "Pequeña"
-                surface.blit(self.font.render(f"Pedido en Caja {size} · {status}", True, color), (x_offset + 12, y))
+                status_parts = self.status_parts(room, order)
+                if done and order.number in getattr(room, "wrong_box_orders", set()):
+                    surface.blit(self.font.render(f"Pedido en Caja {size}", True, settings.TEXT_COLOR),
+                                 (x_offset + 12, y))
+                    y += 20
+                    status_x = x_offset + 12
+                    for text, color in status_parts:
+                        image = self.font.render(text, True, color)
+                        surface.blit(image, (status_x, y))
+                        status_x += image.get_width()
+                else:
+                    status, color = status_parts[0]
+                    surface.blit(self.font.render(f"Pedido en Caja {size} · {status}", True, color),
+                                 (x_offset + 12, y))
                 y += 20
                 
                 for product_type, quantity in sorted(order.requirements.items()):

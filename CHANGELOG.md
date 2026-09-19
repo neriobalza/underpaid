@@ -87,6 +87,9 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Fixed
 
+- Los pedidos con productos y cantidades correctos en una caja del tamaño
+  equivocado ahora se marcan como entregados, muestran el error de caja sin un
+  estado rojo de pedido perdido y descuentan $1 al responsable.
 - Repisas superpuestas y asignadas al mismo producto en el mapa: ahora los
   cinco productos tienen su propio espacio de almacenamiento.
 - Aparición de personajes en posiciones ocupadas por muebles o cajas.
