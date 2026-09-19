@@ -85,12 +85,10 @@ class TutorialTests(unittest.TestCase):
         schedule._spawn_tutorial_boxes() # simulate callback
         
         from src.world.Product import Product
-        # Now we need to simulate the shelves being stocked
-        for shelf in self.play_state.room.shelves:
-            if shelf.product_type == 1:
-                shelf.add(Product(1), 3)
-            elif shelf.product_type == 3:
-                shelf.add(Product(3), 5)
+        # Now we need to simulate the boxes being fully unloaded
+        large_boxes = [box for box in self.play_state.room.objects if getattr(box, "box_type", None) == "large"]
+        for box in large_boxes:
+            self.play_state.room.objects.remove(box)
                 
         schedule.update(0.1)
         

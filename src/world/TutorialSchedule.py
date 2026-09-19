@@ -149,10 +149,9 @@ class TutorialSchedule:
             
         elif self.step == 5:
             if getattr(self, "boxes_spawned", False):
-                product_1_stored = sum(shelf.quantity for shelf in self.room.shelves if shelf.product_type == 1)
-                product_3_stored = sum(shelf.quantity for shelf in self.room.shelves if shelf.product_type == 3)
+                has_large_boxes = any(getattr(obj, "box_type", None) == "large" for obj in self.room.objects)
                 
-                if product_1_stored >= 3 and product_3_stored >= 5:
+                if not has_large_boxes:
                     self.wait_timer = 1.0
                     self.advance_step()
                 
