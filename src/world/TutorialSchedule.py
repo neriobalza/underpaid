@@ -61,16 +61,16 @@ class TutorialSchedule:
         if self.step == 1:
             self.play_dialog("¡Bienvenidos al almacén! Soy su nuevo jefe.")
         elif self.step == 2:
-            self.play_dialog("El trabajo aquí es simple, pero requiere coordinación.\nYa pueden empezar a moverse.")
+            self.play_dialog("El tlabajo aquí es simple, pelo lequiele cooldinación.\nYa pueden empezal a movelse.")
         elif self.step == 3:
             for player in self.play_state.players.values():
                 self.custom_hints[player.number] = self.get_movement_hint(player)
         elif self.step == 4:
-            self.play_dialog("¡Excelente!\nTodas las mañanas llegarán camiones dejando cajas.\nDeben descargarlas en sus respectivos estantes.")
+            self.play_dialog("¡Excelente!\nTodas las mañanas llegalán camiones dejando cajas.\nDeben descalgallas en sus lespectivos estantes.")
         elif self.step == 5:
             self.room.unloading_truck.arrive(on_finish=self._spawn_tutorial_boxes)
         elif self.step == 6:
-            self.play_dialog("¡Muy bien hecho!\nPronto vendrán a buscar pedidos.\nAbran su lista de pedidos ahora mismo.")
+            self.play_dialog("¡Muy bien hecho!\nPlonto vendlán a buscal pedidos.\nAblan su lista de pedidos ahola mismo.")
         elif self.step == 7:
             for player in self.play_state.players.values():
                 self.custom_hints[player.number] = self.get_orders_hint(player)
@@ -79,17 +79,17 @@ class TutorialSchedule:
             self.room.orders = [o1, o2]
             self.dispatch_trucks = [{"id": 1, "time": 0, "done": False}]
         elif self.step == 8:
-            self.play_dialog("¡Apresúrense!\nDebemos empaquetarlos ahora mismo.\nAgarren cajas vacías de los dispensadores y trabajen sobre las mesas.")
+            self.play_dialog("¡Aplesúlense!\nDebemos empaquetallos ahola mismo.\nAgallen cajas vacías de los dispensadoles y tlabajen soble las mesas.")
         elif self.step == 9:
             pass
         elif self.step == 10:
-            self.play_dialog("¡Los paquetes están listos!\nLleven esas cajas terminadas a la zona de despacho (área amarilla).")
+            self.play_dialog("¡Los paquetes están listos!\nLleven esas cajas telminadas a la zona de despacho (álea amalilla).")
         elif self.step == 11:
             pass
         elif self.step == 12:
             self.room.dispatch_truck.arrive(on_finish=self._truck_takes_boxes)
         elif self.step == 13:
-            self.play_dialog("¡Buen trabajo equipo!\nNos vemos mañana a primera hora.")
+            self.play_dialog("¡Buen tlabajo equipo!\nNos vemos mañana a plimela hola.")
         elif self.step == 14:
             self.play_state._finish_match()
 

@@ -152,12 +152,15 @@ class PlayerSelectState(BaseState):
             label = "Confirmado" if number in self.players else "Disponible"
             image = self.game.fonts["small"].render(f"Player {number} · {label}", True, settings.PLAYER_COLORS[number])
             surface.blit(image, image.get_rect(center=(rect.centerx, 188)))
-        draw_text(surface, "Elección de jugador", self.game.fonts["large"], 65,
+        draw_text(surface, "Elección de jugador", self.game.fonts["large"], 45,
                   settings.ACCENT_COLOR)
-        draw_text(surface, "A / Enter: entrar y confirmar · B / Delete: cancelar",
-                  self.game.fonts["small"], 115)
-        draw_text(surface, "Joystick / flechas: elegir lado · Suelta entre pasos",
-                  self.game.fonts["small"], 140, settings.MUTED_COLOR)
+                  
+        draw_text(surface, "[Teclado 1] Mover: WASD · Acción/Entrar: Espacio · Volver: Esc",
+                  self.game.fonts["small"], 95)
+        draw_text(surface, "[Teclado 2] Mover: Flechas · Acción/Entrar: Enter · Volver: Supr",
+                  self.game.fonts["small"], 115, settings.MUTED_COLOR)
+        draw_text(surface, "[Mando] Mover: Joystick/Cruceta · Acción/Entrar: A · Volver: B",
+                  self.game.fonts["small"], 135)
         controller_number = 0
         for index, (instance_id, player) in enumerate(self.participants.items()):
             choice = self.choices[instance_id]

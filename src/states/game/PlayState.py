@@ -136,7 +136,7 @@ class PlayState(BaseState):
     def _next_day1_dialog(self) -> None:
         if self.day1_intro_step == 0:
             self.active_dialog = FloatingDialog(
-                text="Buenos días. ¡Qué bueno que llegaron temprano! Polque...",
+                text="Buenos días. ¡Qué bueno que llegalon templano! Polque...",
                 font=self.game.fonts["medium"],
                 portrait_frames=self.boss_faces[0],
                 sound=settings.load_dialog_sound("boss")
@@ -265,22 +265,20 @@ class PlayState(BaseState):
             lines = []
             action = ""
             if custom_hint and not self.show_orders_panel:
-                lines = [custom_hint]
-            elif self.game.day > 0:
-                hint = self.room.interaction_hint(player)
-                if hint and not self.show_orders_panel:
-                    key = "Enter" if player.uses_keyboard else "A"
-                    lines = [f"{key}: {hint}"]
-                    action, target = self.room.next_action(player)
-                    if action == "unload":
-                        quantity = player.carrying.contents[target.product_type]
-                        lines.append(f"1 unidad por pulsación · En la caja: {quantity}")
-                    box = player.carrying if player.carrying is not None and player.carrying.is_order else None
-                    if action in ("pack", "take_table_box", "box_full"):
-                        box = target.box
-                    if box is not None and box.quantity:
-                        lines += [f"{settings.PRODUCT_NAMES[product_type]} × {quantity}"
-                                  for product_type, quantity in sorted(box.contents.items())]
+                lines.append(custom_hint)
+            
+            if not self.show_orders_panel:
+                action, target = self.room.next_action(player)
+                if action == "unload":
+                    quantity = player.carrying.contents[target.product_type]
+                    lines.append(f"En la caja: {quantity}")
+                    
+                box = player.carrying if player.carrying is not None and player.carrying.is_order else None
+                if action in ("pack", "take_table_box", "box_full"):
+                    box = target.box
+                if box is not None and box.quantity:
+                    lines += [f"{settings.PRODUCT_NAMES[product_type]} × {quantity}"
+                              for product_type, quantity in sorted(box.contents.items())]
 
             if lines:
                 images = [self.game.fonts["small"].render(
