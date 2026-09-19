@@ -1,52 +1,44 @@
 # Changelog
 
-Los cambios relevantes de Underpaid se documentan en este archivo.
-El formato sigue [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
-El proyecto todavía no tiene versiones publicadas; los hitos históricos se
-registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
+Todos los cambios relevantes de Underpaid se documentan en este archivo.
+El formato sigue [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/)
+y las versiones numeradas siguen [Semantic Versioning](https://semver.org/).
+Las versiones y los hitos se presentan del más reciente al más antiguo; los
+cambios pendientes de publicación se registran en `Unreleased`.
 
 ## [Unreleased]
 
 ### Added
 
-- Guardado persistente de la jornada pausada en `saved_game.txt`, incluyendo
-  reloj, puntuación, jugadores, salarios, inventario, pedidos, cajas, muebles y
-  progreso de los eventos de cada estrategia.
+- Guardado persistente de la jornada pausada, incluyendo reloj, puntuación,
+  jugadores, salarios, inventario, pedidos, cajas, muebles y eventos pendientes.
 - Opción **Continuar partida** en el menú principal, con reasignación de controles
   si los mandos usados al guardar ya no están conectados.
-- Persistencia local en `tutorial_progress.txt` para recordar que el tutorial
-  fue completado y una opción **Tutorial** en el menú para volver a jugarlo.
+- Persistencia local para recordar que el tutorial fue completado y una opción
+  **Tutorial** en el menú para volver a jugarlo.
 - Menú principal con el almacén como fondo y un empleado animado que recoge
-  productos, prepara cajas en la mesa y las lleva a despacho.
-- Panel de inicio semitransparente con título, botones y guía de controles.
-- Rediseño del panel de pedidos (`OrdersPanel`) para agrupar las entregas según su camión y ordenarlas cronológicamente con sus respectivas horas de salida.
-- Soporte para música de fondo en `Underpaid` (`play_music`) con empalme automático y libre de interrupciones entre archivos `_intro` y `_loop` monitoreando el estado del mezclador.
-- Inserción de la banda sonora: *Soft* en el menú inicial y tutorial, *Playing* para el bucle principal de niveles, y reproducción única de *Win* al sobrevivir a la jornada con estrellas restantes.
-- **Nivel Tutorial (Día 0):** Implementación completa mediante patrón Strategy (`TutorialSchedule`), un nivel interactivo impulsado por diálogos y condiciones secuenciales sin reloj de partida, enseñando a moverse, descargar ítems de cajas grandes al estante, empaquetar órdenes exactas en mesas y despacharlas.
-- Cajas de prueba para el Tutorial con posiciones, tamaños y productos fijos asegurando el recorrido guiado.
-- Sistema unificado de deducción de salario: se restan y acumulan 5¢ en animaciones flotantes ("-5¢") sobre el responsable por cada pedido enviado erróneamente, o sobre un jugador al azar si un pedido se escapa en el camión sin ser entregado.
-- Panel de pedidos (`OrdersPanel`) destaca con etiqueta roja "NO ENTREGADO" los pedidos perdidos.
-- Teclas mapeadas: Q para Teclado 1, Retroceso para Teclado 2.
-- Desconexión en vivo del mando: cualquier desconexión reinicia la selección de personajes informando a los jugadores "Mando desconectado. Partida reiniciada."
-- Test unitarios dedicados a asegurar la robustez de la máquina de estados del tutorial (`test_tutorial.py`).
-
-- Soporte para dos jugadores de teclado de forma simultánea e independiente (Teclado 1: WASD+Espacio+Esc, Teclado 2: Flechas+Enter+Supr), conservando compatibilidad completa con mandos conectados.
-- Refactorización de la lógica de movimiento en `Player` y `commands` para depender exclusivamente de eventos lógicos de Gale, eliminando diccionarios de conversión redundantes y acoplamiento con constantes puras de Pygame.
-- Interceptación y traducción condicional global de los prefijos de entrada en `Underpaid.py` y `PlayState.py` para abstraer correctamente los dispositivos de cada jugador.
-
-- Panel de pedidos unificado y centrado que pausa el juego para ambos jugadores al abrirse, e incluye los horarios exactos de llegada de los camiones de despacho.
-- Lógica de la jornada reestructurada para analizar la demanda temprana y tardía, garantizando de forma matemática que los productos siempre sean entregados al almacén antes del horario exigido.
-- La cantidad de cajas grandes por entrega de abastecimiento se fijó exactamente a 4 por cada camión (8 en total por jornada).
-
-- Patrón Strategy (`DaySchedule`) para controlar los tiempos de llegada y salida de los camiones, agregando un 30% de margen a los productos necesarios y distribuyéndolos en cajas de hasta 10 elementos.
-- Llegada de camiones de entrega dividida en 2 lotes durante la jornada (inicio y mitad del día).
-- Múltiples camiones de despacho que llegan en intervalos, recogiendo paquetes específicos usando `truck_id`.
-- Interfaz gráfica (`OrdersPanel`) actualizada para indicar el camión correspondiente a cada pedido.
-- Animación de texto flotante que aparece sobre el último jugador que transportó una caja cuando se envía incorrectamente, restando 5 centavos de su salario base (200¢).
-
+  productos, prepara cajas en la mesa y las lleva a despacho, bajo un panel
+  semitransparente con los botones y la guía de controles.
+- Música continua para el menú, el tutorial y las jornadas, además de una pieza
+  especial al superar el día con estrellas restantes.
+- Nivel Tutorial (Día 0) guiado por diálogos y objetivos secuenciales para
+  enseñar movimiento, descarga, empaquetado y despacho sin límite de tiempo.
+- Sistema de deducción de salario con avisos flotantes sobre el responsable de
+  un pedido erróneo o sobre un jugador al azar cuando un pedido no se entrega.
+- Etiqueta roja **NO ENTREGADO** para identificar los pedidos perdidos.
+- Consulta de pedidos con Q para el Teclado 1 y Retroceso para el Teclado 2.
+- Recuperación ante la desconexión de un mando mediante el regreso a la
+  selección de personajes con un mensaje explicativo.
+- Soporte simultáneo para dos jugadores de teclado, conservando la
+  compatibilidad con mandos.
+- Estrategias de jornada y tutorial para controlar la dificultad y la secuencia
+  de eventos de cada día.
+- Dos entregas de abastecimiento por jornada y varios camiones de despacho con
+  horarios y pedidos asignados.
 - Pedidos procedurales de dos a cinco productos para cada jugador, con listas
   personales que se consultan con Q en teclado o X en mando.
-- Cinco productos identificables: camisas, audífonos, pantalones, teléfonos y zapatos.
+- Cinco productos identificables: camisas, audífonos, pantalones, teléfonos y
+  zapatos.
 - Llegada de cajas grandes a las 8 AM con los productos necesarios para todos
   los pedidos, descarga por unidad a sus repisas y eliminación de cajas vacías.
 - Cajas pequeñas y medianas como contenedores, puestos para obtener cajas
@@ -55,22 +47,15 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
   los artículos de un tipo para corregir el contenido de una caja.
 - Fin anticipado de la jornada al entregar todos los pedidos y descuento de
   puntos al finalizar por paquetes incorrectos o duplicados.
-- Mesas de trabajo de 64 píxeles de ancho por 32 de alto con el sprite completo
-  `table.png`, una por cada pareja de espacios de la capa `table` del mapa,
-  con colisiones y una superficie para preparar pedidos.
+- Mesas de trabajo de 64 píxeles de ancho por 32 de alto, colocadas cada dos
+  espacios, con colisiones y una superficie para preparar pedidos.
 - Pausa con `Esc` o Start del mando mediante una pila de estados de Gale,
-  con panel semitransparente y botones para continuar o volver al menú principal.
-- Reloj, personajes y diálogos detenidos durante la pausa, conservando la
-  jornada al continuar y limpiando las entradas pendientes.
+  con panel semitransparente, reloj detenido y opciones para continuar o salir.
 - Repisas en las zonas del almacén definidas por el mapa, dedicadas a un único
-  tipo de producto y con control de existencias.
-- Apariencia de repisa vacía o abastecida según su contenido, con bloqueo del
-  paso de personajes y de la colocación de cajas sobre ella.
-
-### Removed
-
-- Generación de cajas sueltas sin contenido al iniciar cada jornada; ahora
-  sólo llegan cajas de abastecimiento con productos para los pedidos.
+  tipo de producto, con control de existencias y apariencia distinta cuando
+  están vacías o abastecidas; también bloquean el paso y la colocación de cajas.
+- Pruebas automatizadas para el tutorial, los controles, las colisiones y las
+  entregas de pedidos.
 
 ### Changed
 
@@ -86,6 +71,13 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
   “tlabaja, tiene que tlabajal”.
 - **Jugar** inicia el tutorial sólo en la primera partida; después comienza
   directamente en la primera jornada con reloj.
+- El panel de pedidos ahora está centrado, agrupa las entregas por camión, las
+  ordena por hora de salida y muestra los horarios de despacho.
+- El movimiento y las entradas de ambos jugadores ahora usan los eventos y
+  comandos lógicos de Gale de forma uniforme.
+- La jornada calcula la demanda temprana y tardía para garantizar que los
+  productos lleguen antes de su despacho; cada camión de abastecimiento entrega
+  cuatro cajas grandes con un margen adicional de productos.
 - Aviso de descarga más claro: muestra el producto, la repisa de destino, el
   botón de acción y las unidades restantes, indicando una unidad por pulsación.
 - La cuadrícula se muestra en amarillo sólo cuando se pueden descargar productos
@@ -95,18 +87,21 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 - Las cajas pequeñas admiten hasta tres productos y las medianas hasta cinco.
   Consultar pedidos mantiene el reloj corriendo; la pausa sigue deteniéndolo.
 
+### Removed
+
+- Generación de cajas sueltas sin contenido al iniciar cada jornada; ahora
+  sólo llegan cajas de abastecimiento con productos para los pedidos.
+
 ### Fixed
 
 - La tecla `Esc` vuelve correctamente al menú principal desde la selección de
   personajes, aunque el primer teclado todavía no se haya unido a la partida.
-
 - Los pedidos con productos y cantidades correctos en una caja del tamaño
   equivocado ahora se marcan como entregados, muestran el error de caja sin un
   estado rojo de pedido perdido y descuentan $1 al responsable.
 - Repisas superpuestas y asignadas al mismo producto en el mapa: ahora los
   cinco productos tienen su propio espacio de almacenamiento.
 - Aparición de personajes en posiciones ocupadas por muebles o cajas.
-- Pruebas de colisiones y entregas adaptadas al suelo actual y a los paquetes con contenido.
 
 ## [0.2.0] - 2026-09-17
 
