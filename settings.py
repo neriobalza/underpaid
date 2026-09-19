@@ -187,12 +187,15 @@ def load_player_frames(filename: str = "player_walk.png") -> dict[str, tuple[pyg
 
 
 @lru_cache(maxsize=1)
-def load_boss_frames() -> list[pygame.Surface]:
+def load_boss_frames() -> list[list[pygame.Surface]]:
     """Carga los frames del jefe para diálogos."""
     sheet = pygame.image.load(BASE_DIR / "assets" / "graphics" / "boss_face.png").convert_alpha()
     return [
-        sheet.subsurface(pygame.Rect(column * 32, 0, 32, 32)).copy()
-        for column in range(2)
+        [
+            sheet.subsurface(pygame.Rect(column * 32, row * 32, 32, 32)).copy()
+            for column in range(2)
+        ]
+        for row in range(sheet.get_height() // 32)
     ]
 
 

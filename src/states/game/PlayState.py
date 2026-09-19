@@ -5,6 +5,9 @@ from gale.state import BaseState
 from gale.timer import Timer
 
 import settings
+import random
+import types
+
 from src.gui.Menu import draw_text
 from src.world.Room import Room
 from src.gui.FloatingDialog import FloatingDialog
@@ -18,7 +21,7 @@ class PlayState(BaseState):
         self.game = game
 
     def enter(self, players, snapshot=None, **kwargs) -> None:
-        if self.game.day == 0:
+        if self.game.day in (0, 1):
             self.game.play_music("soft")
         else:
             self.game.play_music("playing")
@@ -40,25 +43,30 @@ class PlayState(BaseState):
         self.game_minutes = float(settings.CLOCK_START_HOUR * 60)
         
         if self.game.day > 0:
-            # Gale actualiza Timer una vez por frame en su bucle de juego.
-            self.match_clock = Timer.tween(
-                settings.MATCH_DURATION,
-                [(self, {"game_minutes": float(settings.CLOCK_END_HOUR * 60)})],
-                on_finish=self._finish_match,
-            )
-            
             portrait_frames = settings.load_boss_frames()
-            self.active_dialog = FloatingDialog(
-                text="Q / X: consulta tus pedidos.\nDescarga las cajas en repisas.\nEmpaca y entrega en amarillo.",
-                font=self.game.fonts["medium"],
-                portrait_frames=portrait_frames,
-                sound=settings.load_dialog_sound("boss")
-            )
+            self.boss_faces = portrait_frames
+            if self.game.day == 1:
+                self.match_clock = None
+                self.day1_intro_step = 0
+                self._next_day1_dialog()
+            else:
+                self.match_clock = Timer.tween(
+                    settings.MATCH_DURATION,
+                    [(self, {"game_minutes": float(settings.CLOCK_END_HOUR * 60)})],
+                    on_finish=self._finish_match,
+                )
+                self.active_dialog = FloatingDialog(
+                    text="¡¡TLABAJA!! ¡¡¡TLABAJA!!",
+                    font=self.game.fonts["medium"],
+                    portrait_frames=self.boss_faces[1],
+                    sound=settings.load_dialog_sound("boss")
+                )
         else:
             self.match_clock = None
             self.active_dialog = None
         if snapshot is not None:
             self.game.game_save.restore(self.game, self, snapshot)
+
 
     @property
     def clock_text(self) -> str:
@@ -67,7 +75,6 @@ class PlayState(BaseState):
         return f"{hours % 12 or 12}:{minutes:02d} {period}"
 
     def on_dispatch_depart(self, delivered, incorrect, missed, taken_boxes):
-        import random
         self.room.delivered_orders.update(delivered)
         self.room.incorrect_boxes.extend(incorrect)
         self.room.missed_orders.update(o.number for o in missed)
@@ -101,7 +108,6 @@ class PlayState(BaseState):
                 self.spawn_penalty_text(player, f"-{amount}¢")
 
     def spawn_penalty_text(self, player, text):
-        import types
         if not hasattr(self, "penalties"):
             self.penalties = []
         pen = types.SimpleNamespace(text=text, x=float(player.position.x), y=float(player.position.y - 60), alpha=255.0)
@@ -127,11 +133,55 @@ class PlayState(BaseState):
             self.state_machine.change("game_over", players=self.players, delivered=delivered,
                                       total=self.room.order_count, incorrect=len(incorrect), points=points)
 
+    def _next_day1_dialog(self) -> None:
+        if self.day1_intro_step == 0:
+            self.active_dialog = FloatingDialog(
+                text="Buenos días. ¡Qué bueno que llegaron temprano! Polque...",
+                font=self.game.fonts["medium"],
+                portrait_frames=self.boss_faces[0],
+                sound=settings.load_dialog_sound("boss")
+            )
+            self.day1_intro_step += 1
+        elif self.day1_intro_step == 1:
+            pygame.mixer.music.stop()
+            self.game.current_music = None
+            self.active_dialog = FloatingDialog(
+                text="... Es hola de.........",
+                font=self.game.fonts["medium"],
+                portrait_frames=self.boss_faces[3],
+                sound=settings.load_dialog_sound("boss")
+            )
+            self.day1_intro_step += 1
+        elif self.day1_intro_step == 2:
+            self.game.play_music("playing")
+            self.active_dialog = FloatingDialog(
+                text="¡¡¡TLABAJALLLL!!!!",
+                font=self.game.fonts["medium"],
+                portrait_frames=self.boss_faces[1],
+                sound=settings.load_dialog_sound("boss")
+            )
+            self.day1_intro_step += 1
+        elif self.day1_intro_step == 3:
+            self.match_clock = Timer.tween(
+                settings.MATCH_DURATION,
+                [(self, {"game_minutes": float(settings.CLOCK_END_HOUR * 60)})],
+                on_finish=self._finish_match,
+            )
+            self.active_dialog = FloatingDialog(
+                text="¡¡TLABAJA!! ¡¡¡TLABAJA!!",
+                font=self.game.fonts["medium"],
+                portrait_frames=self.boss_faces[1],
+                sound=settings.load_dialog_sound("boss")
+            )
+            self.day1_intro_step += 1
+
     def update(self, dt: float) -> None:
         if getattr(self, "active_dialog", None):
             self.active_dialog.update(dt)
             if self.active_dialog.is_finished:
                 self.active_dialog = None
+                if self.game.day == 1 and getattr(self, "day1_intro_step", 4) < 4:
+                    self._next_day1_dialog()
             return
 
         if not all(player.is_connected(self.game.controllers) for player in self.players.values()):

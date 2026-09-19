@@ -24,7 +24,7 @@ class TutorialSchedule:
         
     def play_dialog(self, text, frames=None):
         if frames is None:
-            frames = self.portrait_frames
+            frames = self.portrait_frames[0]
             
         for player in self.play_state.players.values():
             player.stop()

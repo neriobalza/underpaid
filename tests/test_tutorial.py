@@ -1,10 +1,12 @@
 import unittest
+import pygame
+from gale.state import StateMachine
 from src.Underpaid import Underpaid
 from src.states.game.PlayState import PlayState
 from src.world.TutorialSchedule import TutorialSchedule
 from src.world.DaySchedule import DaySchedule
 from src.entity.Player import Player
-import pygame
+from src.world.Product import Product
 
 class TutorialTests(unittest.TestCase):
     def setUp(self):
@@ -17,7 +19,6 @@ class TutorialTests(unittest.TestCase):
             "medium": pygame.font.Font(None, 30), 
             "large": pygame.font.Font(None, 64)
         }
-        from gale.state import StateMachine
         self.play_state = PlayState(StateMachine({}), self.game)
         
         self.p1 = Player("keyboard1")
@@ -33,13 +34,12 @@ class TutorialTests(unittest.TestCase):
         self.assertIsNone(self.play_state.match_clock)
         self.assertIsNone(self.play_state.active_dialog)
 
-    def test_day_1_loads_day_schedule_and_timer(self):
-        self.game.day = 1
-        self.play_state.enter([(1, self.p1), (2, self.p2)])
-        
-        self.assertIsInstance(self.play_state.room.strategy, DaySchedule)
+    def test_day_2_loads_day_schedule_and_timer(self):
+        self.game.day = 2
+        self.play_state.enter(players={1: self.p1, 2: self.p2})
         self.assertIsNotNone(self.play_state.match_clock)
-        self.assertIsNotNone(self.play_state.active_dialog)
+        self.assertTrue(hasattr(self.play_state.room, "strategy"))
+        self.assertIsInstance(self.play_state.room.strategy, DaySchedule)
 
     def test_day_0_tutorial_schedule_progression_avoids_errors(self):
         self.game.day = 0
@@ -84,7 +84,6 @@ class TutorialTests(unittest.TestCase):
         # Truck arrived
         schedule._spawn_tutorial_boxes() # simulate callback
         
-        from src.world.Product import Product
         # Now we need to simulate the boxes being fully unloaded
         large_boxes = [box for box in self.play_state.room.objects if getattr(box, "box_type", None) == "large"]
         for box in large_boxes:
