@@ -17,7 +17,7 @@ class PlayState(BaseState):
         super().__init__(state_machine)
         self.game = game
 
-    def enter(self, players, **kwargs) -> None:
+    def enter(self, players, snapshot=None, **kwargs) -> None:
         if self.game.day == 0:
             self.game.play_music("soft")
         else:
@@ -57,6 +57,8 @@ class PlayState(BaseState):
         else:
             self.match_clock = None
             self.active_dialog = None
+        if snapshot is not None:
+            self.game.game_save.restore(self.game, self, snapshot)
 
     @property
     def clock_text(self) -> str:
@@ -120,6 +122,8 @@ class PlayState(BaseState):
                 self.game.stars = max(0, self.game.stars - 1)
             if self.game.day == 0:
                 self.game.mark_tutorial_completed()
+            if hasattr(self.game, "game_save"):
+                self.game.game_save.delete()
             self.state_machine.change("game_over", players=self.players, delivered=delivered,
                                       total=self.room.order_count, incorrect=len(incorrect), points=points)
 
@@ -149,6 +153,8 @@ class PlayState(BaseState):
     def exit(self) -> None:
         if getattr(self, "match_clock", None) is not None:
             self.match_clock.remove()
+        if hasattr(getattr(self, "room", None), "strategy") and hasattr(self.room.strategy, "stop"):
+            self.room.strategy.stop()
         for player in getattr(self, "players", {}).values():
             player.stop()
             player.clear_carrying()

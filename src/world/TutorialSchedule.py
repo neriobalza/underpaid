@@ -195,7 +195,59 @@ class TutorialSchedule:
                 self.advance_step()
                 
         elif self.step == 12:
-            pass
+            if getattr(self, "resume_processed_dispatch", False):
+                self.resume_processed_dispatch = False
+                self.step = 13
+                self.play_dialog("¡Buen trabajo equipo!\nNos vemos mañana a primera hora.")
             
         elif self.step == 13:
             self.advance_step()
+
+    def snapshot_state(self):
+        return {
+            "step": self.step,
+            "wait_timer": self.wait_timer,
+            "moved_dirs": {str(number): sorted(directions)
+                           for number, directions in self.moved_dirs.items()},
+            "orders_opened": {str(number): opened
+                              for number, opened in self.orders_opened.items()},
+            "custom_hints": {str(number): hint
+                             for number, hint in self.custom_hints.items()},
+            "dispatch_trucks": [dict(event) for event in self.dispatch_trucks],
+            "boxes_spawned": getattr(self, "boxes_spawned", False),
+        }
+
+    def restore_state(self, data):
+        self.step = int(data["step"])
+        self.wait_timer = float(data["wait_timer"])
+        self.moved_dirs = {int(number): set(directions)
+                           for number, directions in data["moved_dirs"].items()}
+        self.orders_opened = {int(number): bool(opened)
+                              for number, opened in data["orders_opened"].items()}
+        self.custom_hints = {int(number): hint
+                             for number, hint in data["custom_hints"].items()}
+        self.dispatch_trucks = [dict(event) for event in data["dispatch_trucks"]]
+        self.boxes_spawned = bool(data["boxes_spawned"])
+
+        # Si se guardó durante una animación, se repite sólo el paso pendiente.
+        if self.step == 5 and not self.boxes_spawned:
+            self.step = 4
+        elif self.step == 12:
+            if self.room.delivered_orders:
+                self.resume_processed_dispatch = True
+            else:
+                self.step = 11
+        self._reset_trucks()
+
+    def _reset_trucks(self):
+        for truck in (self.room.unloading_truck, self.room.dispatch_truck):
+            if truck is None:
+                continue
+            if truck.active_tween is not None:
+                truck.active_tween.remove()
+                truck.active_tween = None
+            truck.x = truck.offscreen_x
+            truck.y = truck.offscreen_y
+
+    def stop(self):
+        self._reset_trucks()

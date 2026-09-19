@@ -18,13 +18,20 @@ class PauseState(BaseState):
         if self.play_state.active_dialog and self.play_state.active_dialog.sound:
             self.play_state.active_dialog.sound.stop()
         self.panel = pygame.Rect(80, 125, 480, 245)
+        self.message = ""
         self.menu = Menu(self.game, [
             ("Continuar", self.resume),
-            ("Menú principal", lambda: self.state_machine.change("main_menu")),
+            ("Guardar y salir", self.save_and_exit),
         ], y=230)
 
     def resume(self) -> None:
         self.state_machine.pop()
+
+    def save_and_exit(self) -> None:
+        if self.game.save_and_exit(self.play_state):
+            self.state_machine.change("main_menu")
+        else:
+            self.message = "No se pudo guardar la partida."
 
     def exit(self) -> None:
         self.play_state.reset_input()
@@ -42,4 +49,7 @@ class PauseState(BaseState):
         pygame.draw.rect(surface, settings.ACCENT_COLOR, self.panel, width=2, border_radius=12)
         draw_text(surface, "Pausa", self.game.fonts["large"], 175, settings.ACCENT_COLOR)
         self.menu.render(surface)
+        if self.message:
+            draw_text(surface, self.message, self.game.fonts["small"], 322,
+                      settings.PLACEMENT_INVALID_COLOR)
         draw_text(surface, "Esc: continuar", self.game.fonts["small"], 346, settings.MUTED_COLOR)

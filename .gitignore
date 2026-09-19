@@ -28,6 +28,8 @@ htmlcov/
 # Local tutorial progress
 tutorial_progress.txt
 tutorial_progress.txt.tmp
+saved_game.txt
+saved_game.txt.tmp
 
 # Editors / IDEs
 .vscode/

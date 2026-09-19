@@ -16,16 +16,21 @@ from src.states.game.PauseState import PauseState
 from src.states.game.SceneStack import SceneStack
 from src.input.ControllerManager import ControllerManager
 from src.TutorialProgress import TutorialProgress
+from src.GameSave import GameSave
+from src.entity.Player import Player
 
 
 class Underpaid(Game):
-    def __init__(self, *args, tutorial_progress_path=None, **kwargs) -> None:
+    def __init__(self, *args, tutorial_progress_path=None, game_save_path=None,
+                 **kwargs) -> None:
         self.closed = False
         self.back_held = False
         progress_path = tutorial_progress_path or settings.TUTORIAL_PROGRESS_PATH
         self.tutorial_progress = TutorialProgress(progress_path)
         self.tutorial_completed = self.tutorial_progress.load()
         self.tutorial_progress_error = None
+        self.game_save = GameSave(game_save_path or settings.GAME_SAVE_PATH)
+        self.game_save_error = None
         try:
             super().__init__(*args, **kwargs)
         except Exception:
@@ -74,6 +79,51 @@ class Underpaid(Game):
     def start_tutorial(self) -> None:
         self.reset_score()
         self.state_machine.change("player_select")
+
+    def has_saved_game(self) -> bool:
+        available = self.game_save.exists()
+        if self.game_save.path.is_file() and not available:
+            self.game_save_error = "La partida guardada no es válida."
+        return available
+
+    def save_and_exit(self, play_state) -> bool:
+        self.game_save_error = None
+        try:
+            self.game_save.save(self, play_state)
+        except (OSError, TypeError, ValueError) as error:
+            self.game_save_error = str(error)
+            return False
+        return True
+
+    def continue_game(self) -> None:
+        self.game_save_error = None
+        try:
+            snapshot = self.game_save.load()
+            game_data = snapshot["game"]
+            self.day = game_data["day"]
+            self.stars = game_data["stars"]
+            self.delivered = game_data["delivered"]
+            self.score = game_data["score"]
+            players = {}
+            for number in (1, 2):
+                source = snapshot["players"][str(number)]["input_source"]
+                player = Player(source)
+                player.select(number)
+                players[number] = player
+            connected = {
+                number: player for number, player in players.items()
+                if player.is_connected(self.controllers)
+            }
+            if len(connected) == 2:
+                self.state_machine.change("play", players=connected, snapshot=snapshot)
+            else:
+                self.state_machine.change(
+                    "player_select", players=connected, resume_snapshot=snapshot,
+                    message="Reconecta o elige dos controles para continuar.",
+                )
+        except (OSError, TypeError, ValueError, KeyError, IndexError, pygame.error) as error:
+            self.game_save_error = str(error)
+            self.state_machine.change("main_menu")
 
     def mark_tutorial_completed(self) -> None:
         self.tutorial_completed = True

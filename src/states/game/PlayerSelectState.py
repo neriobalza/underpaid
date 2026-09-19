@@ -14,7 +14,7 @@ class PlayerSelectState(BaseState):
         super().__init__(state_machine)
         self.game = game
 
-    def enter(self, players=None, message: str = "") -> None:
+    def enter(self, players=None, message: str = "", resume_snapshot=None) -> None:
         # Sólo las elecciones confirmadas reservan un personaje.
         self.players = dict(players or {})
         self.participants = {p.input_source: p for p in self.players.values()}
@@ -23,6 +23,7 @@ class PlayerSelectState(BaseState):
         for player in self.participants.values():
             player.stop()
         self.message = message
+        self.resume_snapshot = resume_snapshot
         self.keyboard_keys: set[int] = set()
 
     def update(self, dt: float) -> None:
@@ -84,7 +85,9 @@ class PlayerSelectState(BaseState):
                 self.choices[other_id] = None
         self.message = f"Player {choice} confirmado. B / Delete para volver a elegir."
         if len(self.players) == 2:
-            self.state_machine.change("play", players=self.players)
+            self.state_machine.change(
+                "play", players=self.players, snapshot=self.resume_snapshot,
+            )
 
     def cancel(self, instance_id: int | str) -> None:
         player = self.participants[instance_id]

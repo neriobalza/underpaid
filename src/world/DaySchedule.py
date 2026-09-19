@@ -41,7 +41,8 @@ class DaySchedule:
             self.dispatch_trucks.append({
                 "id": i + 1,
                 "time": interval * (i + 1),
-                "done": False
+                "done": False,
+                "processed": False,
             })
             
         mid_time = self.match_duration / 2
@@ -93,12 +94,13 @@ class DaySchedule:
             
         # Unloading events
         self.unloading_events = [
-            {"time": 2.0, "batch": self.batch1, "done": False},
-            {"time": mid_time, "batch": self.batch2, "done": False}
+            {"time": 2.0, "batch": self.batch1, "done": False, "spawned": False},
+            {"time": mid_time, "batch": self.batch2, "done": False, "spawned": False}
         ]
             
         self.active_unloading = False
         self.active_dispatch = False
+        self.pending_timers = []
         
         # Assign orders to room so UI and mechanics can see them
         self.room.orders = self.orders
@@ -129,9 +131,16 @@ class DaySchedule:
                 if not ev["done"] and self.time >= ev["time"]:
                     ev["done"] = True
                     self.active_unloading = True
-                    def on_arrive(batch=ev["batch"]):
-                        self.spawn_batch(batch)
-                        Timer.after(5.0, lambda: self.room.unloading_truck.depart(on_finish=lambda: setattr(self, "active_unloading", False)))
+                    def on_arrive(event=ev):
+                        self.spawn_batch(event["batch"])
+                        event["spawned"] = True
+                        timer = Timer.after(
+                            5.0,
+                            lambda: self.room.unloading_truck.depart(
+                                on_finish=lambda: setattr(self, "active_unloading", False)
+                            ),
+                        )
+                        self.pending_timers.append(timer)
                     self.room.unloading_truck.arrive(on_finish=on_arrive)
                     break
                     
@@ -142,7 +151,7 @@ class DaySchedule:
                     self.active_dispatch = True
                     self.room.active_dispatch_truck_id = ev["id"]
                     def on_dispatch_arrive():
-                        Timer.after(10.0, self.depart_dispatch_truck)
+                        self.pending_timers.append(Timer.after(10.0, self.depart_dispatch_truck))
                     self.room.dispatch_truck.arrive(on_finish=on_dispatch_arrive)
                     break
                     
@@ -157,6 +166,11 @@ class DaySchedule:
         
         if hasattr(self.room, "on_dispatch_depart"):
             self.room.on_dispatch_depart(delivered, incorrect, missed, boxes_to_take)
+
+        event = next((event for event in self.dispatch_trucks
+                      if event["id"] == self.room.active_dispatch_truck_id), None)
+        if event is not None:
+            event["processed"] = True
             
         self.room.dispatch_truck.depart(on_finish=self._on_dispatch_departed)
         
@@ -193,3 +207,71 @@ class DaySchedule:
 
         missed = [o for o in truck_orders if o.number not in delivered]
         return delivered, incorrect, missed
+
+    @staticmethod
+    def _batch_data(batch):
+        return [{str(product_type): quantity for product_type, quantity in box.items()}
+                for box in batch]
+
+    @staticmethod
+    def _batch_from(data):
+        return [Counter({int(product_type): int(quantity)
+                         for product_type, quantity in box.items()})
+                for box in data]
+
+    def snapshot_state(self):
+        return {
+            "time": self.time,
+            "dispatch_trucks": [dict(event) for event in self.dispatch_trucks],
+            "unloading_events": [{
+                "time": event["time"],
+                "batch": self._batch_data(event["batch"]),
+                "done": event["done"],
+                "spawned": event.get("spawned", False),
+            } for event in self.unloading_events],
+            "active_unloading": self.active_unloading,
+            "active_dispatch": self.active_dispatch,
+            "active_dispatch_truck_id": self.room.active_dispatch_truck_id,
+        }
+
+    def restore_state(self, data):
+        self.time = float(data["time"])
+        self.dispatch_trucks = [dict(event) for event in data["dispatch_trucks"]]
+        self.unloading_events = [{
+            "time": float(event["time"]),
+            "batch": self._batch_from(event["batch"]),
+            "done": bool(event["done"]),
+            "spawned": bool(event.get("spawned", False)),
+        } for event in data["unloading_events"]]
+        self.batch1 = self.unloading_events[0]["batch"]
+        self.batch2 = self.unloading_events[1]["batch"]
+
+        # Las animaciones y callbacks no se serializan. Reintentar solamente
+        # los eventos que aún no habían producido su efecto.
+        for event in self.unloading_events:
+            if event["done"] and not event["spawned"]:
+                event["done"] = False
+        for event in self.dispatch_trucks:
+            if event["done"] and not event.get("processed", False):
+                event["done"] = False
+            event.setdefault("processed", False)
+        self.active_unloading = False
+        self.active_dispatch = False
+        self.room.active_dispatch_truck_id = None
+        self._reset_trucks()
+
+    def _reset_trucks(self):
+        for truck in (self.room.unloading_truck, self.room.dispatch_truck):
+            if truck is None:
+                continue
+            if truck.active_tween is not None:
+                truck.active_tween.remove()
+                truck.active_tween = None
+            truck.x = truck.offscreen_x
+            truck.y = truck.offscreen_y
+
+    def stop(self):
+        for timer in self.pending_timers:
+            timer.remove()
+        self.pending_timers.clear()
+        self._reset_trucks()

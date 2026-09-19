@@ -44,7 +44,9 @@ transporta cajas de fondo. La animación tiene su propia escena; la partida y
 el tutorial empiezan al elegir **Jugar** la primera vez. Al completarlo, el
 progreso queda guardado en `tutorial_progress.txt`, las partidas siguientes
 comienzan en el día 1 y aparece la opción **Tutorial** para repetirlo. El panel
-semitransparente también reúne las opciones **Configuración** y **Salir**.
+semitransparente también reúne las opciones **Configuración** y **Salir**. Cuando
+existe una jornada guardada, **Continuar partida** la restaura desde su último
+reloj, inventario, pedidos y posiciones.
 
 - Flechas arriba/abajo o W/S: seleccionar una opción.
 - Enter o Espacio: activar la opción seleccionada.
@@ -67,6 +69,7 @@ semitransparente también reúne las opciones **Configuración** y **Salir**.
 - `src/input/ControllerManager.py`: inicialización de mandos y detección de conexiones.
 - `src/input/commands.py`: comandos de movimiento del teclado con Gale.
 - `src/TutorialProgress.py`: lectura y guardado local de la finalización del tutorial.
+- `src/GameSave.py`: snapshot y restauración de la última jornada en `saved_game.txt`.
 - `src/states/game/GameOverState.py`: resumen diario y condición de derrota.
 
 ## Dos jugadores
@@ -157,8 +160,12 @@ en segundos reales.
 Durante la partida, **Esc** o **Start** del mando abren un panel semitransparente
 sobre el almacén. El reloj, los personajes y los diálogos se detienen hasta continuar.
 El botón **Continuar** (o Esc, Start o B) recupera la misma jornada, sin reiniciar
-el tiempo ni los objetos. **Menú principal** abandona la jornada y cancela su reloj.
-Los botones admiten teclado, ratón y cruceta/A del mando.
+el tiempo ni los objetos. **Guardar y salir** almacena la jornada en
+`saved_game.txt` y vuelve al menú principal, donde **Continuar partida** recupera
+el día, reloj, puntuación, jugadores, salarios, pedidos, cajas, mesas, repisas y
+eventos pendientes. Si los mandos guardados no están conectados, el juego solicita
+elegir dos controles antes de restaurar la jornada. Los botones admiten teclado,
+ratón y cruceta/A del mando.
 
 ## Completar pedidos
 
@@ -221,7 +228,8 @@ escenas heredan de `BaseState` y usan `SceneStack`, una extensión de
 `PlayState`: sólo el estado superior recibe actualizaciones y entradas, mientras
 ambos se dibujan. `Timer` se pausa inmediatamente al dejar de estar en juego y se
 reanuda al continuar. El reloj se cancela en `PlayState.exit()`, incluso al cerrar
-la ventana con la partida pausada.
+la ventana con la partida pausada. Cada estrategia implementa su propio snapshot
+para restaurar eventos sin duplicar entregas que ya habían sido procesadas.
 
 `ControllerManager` llama a `InputHandler.init_gamepads()` al iniciar, conserva
 los controladores SDL para recibir eventos `CONTROLLER*` y reconcilia los IDs de

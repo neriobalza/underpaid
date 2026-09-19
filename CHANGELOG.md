@@ -9,6 +9,11 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Added
 
+- Guardado persistente de la jornada pausada en `saved_game.txt`, incluyendo
+  reloj, puntuación, jugadores, salarios, inventario, pedidos, cajas, muebles y
+  progreso de los eventos de cada estrategia.
+- Opción **Continuar partida** en el menú principal, con reasignación de controles
+  si los mandos usados al guardar ya no están conectados.
 - Persistencia local en `tutorial_progress.txt` para recordar que el tutorial
   fue completado y una opción **Tutorial** en el menú para volver a jugarlo.
 - Menú principal con el almacén como fondo y un empleado animado que recoge
@@ -69,6 +74,9 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Changed
 
+- El botón **Menú principal** de la pausa fue sustituido por **Guardar y salir**;
+  los camiones que estaban animándose reintentan únicamente su evento pendiente
+  al cargar la partida.
 - El selector identifica al Jugador 1 en rojo y al Jugador 2 en azul; el segundo
   jugador utiliza sus sprites propios al caminar y al cargar cajas.
 - La estrategia de cada jornada aumenta la dificultad sin reiniciar el mapa:
