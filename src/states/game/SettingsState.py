@@ -21,6 +21,7 @@ class SettingsState(BaseState):
             ("", lambda: self.cycle_resolution(1)),
             ("", self.toggle_fullscreen),
             ("Aplicar", self.apply_settings),
+            ("Borrar todo el progreso", self.reset_progress),
             ("Volver", lambda: self.state_machine.change("main_menu")),
         ], y=190)
         self.update_label()
@@ -53,6 +54,10 @@ class SettingsState(BaseState):
             self.message = "No se pudo aplicar la configuración de pantalla."
         else:
             self.message = "Configuración aplicada."
+
+    def reset_progress(self) -> None:
+        self.game.reset_progress()
+        self.message = "Progreso borrado exitosamente."
 
     def on_input(self, input_id, input_data) -> None:
         if input_id == "back" and input_data.pressed:

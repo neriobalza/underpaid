@@ -29,6 +29,8 @@ class PauseTests(unittest.TestCase):
         patcher = patch("pygame.joystick.get_count", return_value=0)
         patcher.start()
         self.addCleanup(patcher.stop)
+        pygame.init()
+        pygame.font.init()
         self.game = Underpaid()
         self.addCleanup(self.game.quit)
         patcher = patch.object(self.game.controllers, "is_connected", return_value=True)

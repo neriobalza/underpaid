@@ -129,7 +129,20 @@ class PlayState(BaseState):
             if self.game.day == 0:
                 self.game.mark_tutorial_completed()
             if hasattr(self.game, "game_save"):
-                self.game.game_save.delete()
+                if self.game.stars > 0 and self.game.day > 0:
+                    self.game.day += 1
+                    temp_state = PlayState(self.state_machine, self.game)
+                    temp_state.enter(self.players)
+                    if getattr(temp_state, "match_clock", None):
+                        temp_state.match_clock.remove()
+                        temp_state.match_clock = None
+                    try:
+                        self.game.game_save.save(self.game, temp_state)
+                    except Exception:
+                        pass
+                    self.game.day -= 1
+                else:
+                    self.game.game_save.delete()
             self.state_machine.change("game_over", players=self.players, delivered=delivered,
                                       total=self.room.order_count, incorrect=len(incorrect), points=points)
 

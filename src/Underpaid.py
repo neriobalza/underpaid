@@ -70,6 +70,16 @@ class Underpaid(Game):
         self.score = 0
         self.day = 0
 
+    def reset_progress(self) -> None:
+        self.reset_score()
+        self.tutorial_completed = False
+        try:
+            self.tutorial_progress.path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        self.game_save.delete()
+        self.game_save_error = None
+
     def start_game(self) -> None:
         self.reset_score()
         if self.tutorial_completed:
