@@ -97,6 +97,9 @@ registran con su fecha y los cambios pendientes de publicación en `Unreleased`.
 
 ### Fixed
 
+- La tecla `Esc` vuelve correctamente al menú principal desde la selección de
+  personajes, aunque el primer teclado todavía no se haya unido a la partida.
+
 - Los pedidos con productos y cantidades correctos en una caja del tamaño
   equivocado ahora se marcan como entregados, muestran el error de caja sin un
   estado rojo de pedido perdido y descuentan $1 al responsable.

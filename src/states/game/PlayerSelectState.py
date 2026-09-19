@@ -97,7 +97,10 @@ class PlayerSelectState(BaseState):
 
     def on_input(self, input_id, input_data) -> None:
         self.update(0)
-        if input_id == "back" and input_data.pressed:
+        # Escape pertenece al primer esquema de teclado y Gale lo publica como
+        # keyboard1_cancel. En esta pantalla también funciona como regreso
+        # global, incluso cuando ese teclado todavía no se ha unido.
+        if input_id in ("back", "keyboard1_cancel") and input_data.pressed:
             self.state_machine.change("main_menu")
             return
 

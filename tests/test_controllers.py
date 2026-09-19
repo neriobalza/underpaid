@@ -15,6 +15,7 @@ from gale.timer import Timer
 from gale.tilemap import CollisionType, collision_type_at
 
 from src.Underpaid import Underpaid
+from src.states.game.MainMenuState import MainMenuState
 from src.states.game.PlayerSelectState import PlayerSelectState
 from src.states.game.PlayState import PlayState
 from src.states.game.GameOverState import GameOverState
@@ -157,6 +158,11 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(set(state.participants), {71, 203})
         self.assertEqual(state.players, {})
         self.assertTrue(all(p.position.x == 320 for p in state.participants.values()))
+
+    def test_escape_returns_from_selection_to_main_menu(self):
+        self.selection()
+        self.key_tap(pygame.K_ESCAPE)
+        self.assertIsInstance(self.game.state_machine.current, MainMenuState)
 
     def test_confirmed_side_cannot_be_taken_and_requires_b_to_change(self):
         state = self.selection()
