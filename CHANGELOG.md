@@ -10,6 +10,15 @@ cambios pendientes de publicación se registran en `Unreleased`.
 
 ### Added
 
+- Iconos visuales en la barra superior de la jornada: cinco estrellas (`star.png`)
+  a la derecha con silueta gris de fondo y recorte proporcional según las
+  estrellas restantes, e iconos de moneda (`coin.png`) a la izquierda con los
+  indicadores `J1` y `J2` en blanco junto al salario de cada jugador.
+- Autoguardado automático del inicio de la siguiente jornada al superar un nivel,
+  y botón **Borrar todo el progreso** en el menú de Configuración para reiniciar
+  el juego desde cero (eliminando partida guardada y progreso del tutorial).
+- Cinemática de introducción en el Día 1 con múltiples expresiones del jefe,
+  pausa dramática y cambio de música antes de iniciar el reloj de la jornada.
 - Guardado persistente de la jornada pausada, incluyendo reloj, puntuación,
   jugadores, salarios, inventario, pedidos, cajas, muebles y eventos pendientes.
 - Opción **Continuar partida** en el menú principal, con reasignación de controles
@@ -54,11 +63,21 @@ cambios pendientes de publicación se registran en `Unreleased`.
 - Repisas en las zonas del almacén definidas por el mapa, dedicadas a un único
   tipo de producto, con control de existencias y apariencia distinta cuando
   están vacías o abastecidas; también bloquean el paso y la colocación de cajas.
-- Pruebas automatizadas para el tutorial, los controles, las colisiones y las
-  entregas de pedidos.
+- Pruebas automatizadas para el tutorial, los controles, las colisiones, el
+  autoguardado/reinicio de progreso y las entregas de pedidos.
 
 ### Changed
 
+- Redondeo automático a dos decimales (`0.01`) cada vez que se actualizan las
+  estrellas de la partida.
+- Las repisas ahora utilizan sprites de 64 × 64 píxeles.
+- Todos los diálogos del jefe reemplazan las letras `r` y `rr` por `l`.
+- Los cuadros emergentes sobre los jugadores ahora muestran únicamente el
+  contenido de la caja (`En la caja: X` o lista de productos), sin textos de
+  ayuda de controles, y también están activos durante el tutorial.
+- Devolver productos de una caja de pedido a su repisa (`return_contents`) ahora
+  resalta el cuadro del suelo y el aviso en amarillo, igual que al descargar
+  cajas grandes.
 - El botón **Menú principal** de la pausa fue sustituido por **Guardar y salir**;
   los camiones que estaban animándose reintentan únicamente su evento pendiente
   al cargar la partida.
@@ -78,10 +97,10 @@ cambios pendientes de publicación se registran en `Unreleased`.
 - La jornada calcula la demanda temprana y tardía para garantizar que los
   productos lleguen antes de su despacho; cada camión de abastecimiento entrega
   cuatro cajas grandes con un margen adicional de productos.
-- Aviso de descarga más claro: muestra el producto, la repisa de destino, el
-  botón de acción y las unidades restantes, indicando una unidad por pulsación.
-- La cuadrícula se muestra en amarillo sólo cuando se pueden descargar productos
-  en una repisa; las posiciones de colocación bloqueadas conservan el rojo.
+- Aviso de descarga más claro: muestra las unidades restantes en la caja para la
+  repisa correspondiente.
+- La cuadrícula se muestra en amarillo cuando se pueden descargar o devolver
+  productos en una repisa; las posiciones de colocación bloqueadas conservan el rojo.
 - Las entregas requieren el tamaño de caja y las cantidades exactas de cada
   producto: un pedido correcto suma 100 puntos y un paquete incorrecto resta 50.
 - Las cajas pequeñas admiten hasta tres productos y las medianas hasta cinco.

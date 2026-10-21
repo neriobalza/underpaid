@@ -93,7 +93,7 @@ class PlayState(BaseState):
             penalties[responsible] += settings.WRONG_BOX_SALARY_PENALTY
         
         for box in incorrect:
-            self.game.stars = max(0, self.game.stars - 0.05)
+            self.game.stars = round(max(0, self.game.stars - 0.05), 2)
             if box.last_carrier_number and box.last_carrier_number in penalties:
                 penalties[box.last_carrier_number] += 5
                 
@@ -125,7 +125,7 @@ class PlayState(BaseState):
             self.game.delivered += delivered
             self.game.score += points
             if delivered < self.room.order_count:
-                self.game.stars = max(0, self.game.stars - 1)
+                self.game.stars = round(max(0, self.game.stars - 1), 2)
             if self.game.day == 0:
                 self.game.mark_tutorial_completed()
             if hasattr(self.game, "game_save"):
@@ -319,17 +319,46 @@ class PlayState(BaseState):
         draw_text(surface, self.clock_text, self.game.fonts["medium"],
                   settings.CLOCK_BAR_HEIGHT // 2, settings.BACKGROUND_COLOR)
                   
-        stars_str = f"{self.game.stars:.2f}".rstrip('0').rstrip('.')
-        label = self.game.fonts["small"].render(
-            f"Día {self.game.day} · {stars_str}/{settings.MAX_STARS} estrellas",
+        day_label = self.game.fonts["small"].render(
+            f"Día {self.game.day}",
             True, settings.BACKGROUND_COLOR,
         )
-        surface.blit(label, (20, 7))
-        
-        salary1 = self.players[1].salary if 1 in self.players else 0
-        salary2 = self.players[2].salary if 2 in self.players else 0
-        label_salary = self.game.fonts["small"].render(f"Salarios: J1: {salary1}¢ | J2: {salary2}¢", True, settings.BACKGROUND_COLOR)
-        surface.blit(label_salary, (settings.VIRTUAL_WIDTH - label_salary.get_width() - 8, 7))
+        cursor_x = 12
+        surface.blit(day_label, (cursor_x, (settings.CLOCK_BAR_HEIGHT - day_label.get_height()) // 2))
+        cursor_x += day_label.get_width() + 12
+
+        coin_sprite = settings.load_coin_sprite()
+        coin_w, coin_h = coin_sprite.get_size()
+        coin_y = (settings.CLOCK_BAR_HEIGHT - coin_h) // 2
+        coin_font = self.game.fonts.get("tiny") or pygame.font.Font(None, 16)
+
+        for number in (1, 2):
+            salary = self.players[number].salary if number in self.players else 0
+            surface.blit(coin_sprite, (cursor_x, coin_y))
+            tag = coin_font.render(f"J{number}", True, (255, 255, 255))
+            tag_rect = tag.get_rect(center=(cursor_x + coin_w // 2, coin_y + coin_h // 2))
+            surface.blit(tag, tag_rect)
+            cursor_x += coin_w + 4
+
+            salary_label = self.game.fonts["small"].render(f"{salary}¢", True, settings.BACKGROUND_COLOR)
+            surface.blit(salary_label, (cursor_x, (settings.CLOCK_BAR_HEIGHT - salary_label.get_height()) // 2))
+            cursor_x += salary_label.get_width() + 10
+
+        filled_star, empty_star = settings.load_star_sprites()
+        star_w, star_h = filled_star.get_size()
+        star_gap = 4
+        total_stars_width = settings.MAX_STARS * star_w + (settings.MAX_STARS - 1) * star_gap
+        start_x = settings.VIRTUAL_WIDTH - total_stars_width - 12
+        star_y = (settings.CLOCK_BAR_HEIGHT - star_h) // 2
+        stars_value = max(0.0, min(float(settings.MAX_STARS), float(self.game.stars)))
+
+        for i in range(settings.MAX_STARS):
+            star_x = start_x + i * (star_w + star_gap)
+            surface.blit(empty_star, (star_x, star_y))
+            fill_ratio = max(0.0, min(1.0, stars_value - i))
+            if fill_ratio > 0:
+                fill_width = max(1, round(star_w * fill_ratio))
+                surface.blit(filled_star, (star_x, star_y), pygame.Rect(0, 0, fill_width, star_h))
 
         if getattr(self, "active_dialog", None):
             self.active_dialog.render(surface)

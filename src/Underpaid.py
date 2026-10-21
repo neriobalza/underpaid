@@ -64,6 +64,14 @@ class Underpaid(Game):
         else:
             Timer.pause()
 
+    @property
+    def stars(self) -> int | float:
+        return self._stars
+
+    @stars.setter
+    def stars(self, value: int | float) -> None:
+        self._stars = round(value, 2)
+
     def reset_score(self) -> None:
         self.stars = settings.MAX_STARS
         self.delivered = 0

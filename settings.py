@@ -164,6 +164,27 @@ def load_shelf_frames() -> tuple[pygame.Surface, ...]:
 
 
 @lru_cache(maxsize=1)
+def load_star_sprites() -> tuple[pygame.Surface, pygame.Surface]:
+    """Retorna (estrella llena, silueta gris de fondo) para la barra superior."""
+    raw = pygame.image.load(BASE_DIR / "assets" / "graphics" / "star.png").convert_alpha()
+    star_size = (22, 22)
+    filled = pygame.transform.scale(raw, star_size)
+    mask = pygame.mask.from_surface(filled)
+    empty = mask.to_surface(
+        setcolor=(180, 186, 198, 255),
+        unsetcolor=(0, 0, 0, 0),
+    )
+    return filled, empty
+
+
+@lru_cache(maxsize=1)
+def load_coin_sprite() -> pygame.Surface:
+    """Carga y escala el icono de moneda para la barra superior."""
+    raw = pygame.image.load(BASE_DIR / "assets" / "graphics" / "coin.png").convert_alpha()
+    return pygame.transform.scale(raw, (22, 22))
+
+
+@lru_cache(maxsize=1)
 def load_room_tileset() -> Tileset:
     sheet = pygame.image.load(BASE_DIR / "assets" / "graphics" / "tilesheet.png").convert_alpha()
     sheet = pygame.transform.scale(sheet, (sheet.get_width() * TILE_SCALE, sheet.get_height() * TILE_SCALE))
@@ -234,6 +255,7 @@ def load_dialog_sound(character: str = "default") -> pygame.mixer.Sound:
 def create_fonts() -> dict[str, pygame.font.Font]:
     """Se llama después de que Gale inicializa Pygame."""
     return {
+        "tiny": pygame.font.Font(None, 16),
         "small": pygame.font.Font(None, 22),
         "medium": pygame.font.Font(None, 30),
         "large": pygame.font.Font(None, 64),
