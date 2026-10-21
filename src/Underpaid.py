@@ -64,11 +64,29 @@ class Underpaid(Game):
         else:
             Timer.pause()
 
+    @property
+    def stars(self) -> int | float:
+        return self._stars
+
+    @stars.setter
+    def stars(self, value: int | float) -> None:
+        self._stars = round(value, 2)
+
     def reset_score(self) -> None:
         self.stars = settings.MAX_STARS
         self.delivered = 0
         self.score = 0
         self.day = 0
+
+    def reset_progress(self) -> None:
+        self.reset_score()
+        self.tutorial_completed = False
+        try:
+            self.tutorial_progress.path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        self.game_save.delete()
+        self.game_save_error = None
 
     def start_game(self) -> None:
         self.reset_score()
